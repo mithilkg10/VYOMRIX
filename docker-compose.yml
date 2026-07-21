@@ -24,8 +24,8 @@ services:
     image: postgres:15-alpine
     container_name: vyorix-postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-vyorix_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vyorix_password}
+      POSTGRES_USER: ${POSTGRES_USER:-vyorix_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vyorix_secure_password_123!}
       POSTGRES_DB: ${POSTGRES_DB:-vyorix_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -44,15 +44,19 @@ services:
     expose:
       - "6379"
 
-  # frontend and backend will be uncommented once developed
-  # backend:
-  #   build: ./backend
-  #   container_name: vyorix-backend
-  #   ...
-  # frontend:
-  #   build: ./frontend
-  #   container_name: vyorix-frontend
-  #   ...
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: vyorix-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
+    networks:
+      - vyorix-network
+    restart: unless-stopped
+    ports:
+      - "15672:15672" # Management UI
+    expose:
+      - "5672"
 
 networks:
   vyorix-network:
