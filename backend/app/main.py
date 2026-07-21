@@ -5,6 +5,7 @@ from app.domains.health import api as health_api
 from app.domains.siem import api as siem_api
 from app.domains.threat_intel import api as ti_api
 from app.domains.ai import api as ai_api
+from app.domains.deception import api as deception_api
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -28,6 +29,7 @@ def create_app() -> FastAPI:
     app.include_router(siem_api.router, prefix=f"{settings.API_V1_STR}")
     app.include_router(ti_api.router, prefix=f"{settings.API_V1_STR}")
     app.include_router(ai_api.router, prefix=f"{settings.API_V1_STR}")
+    app.include_router(deception_api.router, prefix=f"{settings.API_V1_STR}")
 
     return app
 
