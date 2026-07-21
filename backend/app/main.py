@@ -10,6 +10,7 @@ from app.domains.waf import api as waf_api
 from app.domains.assets import api as assets_api
 from app.domains.detection import api as detection_api
 from app.domains.mitre import api as mitre_api
+from app.domains.incidents import api as incidents_api
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -38,6 +39,7 @@ def create_app() -> FastAPI:
     app.include_router(assets_api.router, prefix=f"{settings.API_V1_STR}")
     app.include_router(detection_api.router, prefix=f"{settings.API_V1_STR}")
     app.include_router(mitre_api.router, prefix=f"{settings.API_V1_STR}")
+    app.include_router(incidents_api.router, prefix=f"{settings.API_V1_STR}")
 
     return app
 
