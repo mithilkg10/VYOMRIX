@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  # The WAF acting as a Reverse Proxy
+  modsec-waf:
+    image: owasp/modsecurity-crs:nginx
+    container_name: vyomrix-waf
+    ports:
+      - "8080:80"
+    environment:
+      - PARANOIA=1
+      - PROXY_SSL=0
+      - BACKEND=http://juiceshop:3000
+      # Enable ModSecurity in blocking mode
+      - MODSEC_RULE_ENGINE=on 
+      - ERRORLOG=/var/log/nginx/error.log
+      - ACCESSLOG=/var/log/nginx/access.log
+      # Log format compatible with Vyomrix parsing
+      - LOG_FORMAT=json
+    volumes:
+      - ./logs:/var/log/nginx
+    depends_on:
+      - juiceshop
+
+  # Intentionally vulnerable application protected by WAF
+  juiceshop:
+    image: bkimminich/juice-shop
+    container_name: vyomrix-juiceshop
+    expose:
+      - "3000"
+    environment:
+      - NODE_ENV=production
