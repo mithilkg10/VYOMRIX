@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  # 1. Certificate Generator
+  wazuh.generator:
+    image: wazuh/wazuh-certs-generator:4.9.0
+    hostname: wazuh-generator
+    volumes:
+      - certs:/certs
+      - ./config/wazuh_indexer_ssl_certs.yml:/config/certs.yml
+    networks:
+      - wazuh_net
+    command: /bin/bash -c "if [ ! -f /certs/wazuh.indexer-key.pem ]; then /entrypoint.sh; fi"
+
+  # 2. Wazuh Indexer (OpenSearch)
+  wazuh.indexer:
+    image: wazuh/wazuh-indexer:4.9.0
+    hostname: wazuh.indexer
+    restart: always
+    ports:
+      - "9200:9200"
+    environment:
+      - "OPENSEARCH_INITIAL_ADMIN_PASSWORD=${INDEXER_PASSWORD:-SecretPassword123!}"
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g"
+    volumes:
+      - wazuh-indexer-data:/var/lib/wazuh-indexer
+      - certs:/usr/share/wazuh-indexer/certs
+    networks:
+      - wazuh_net
+    depends_on:
+      - wazuh.generator
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-u", "admin:${INDEXER_PASSWORD:-SecretPassword123!}", "https://localhost:9200"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # 3. Wazuh Manager
+  wazuh.manager:
+    image: wazuh/wazuh-manager:4.9.0
+    hostname: wazuh.manager
+    restart: always
+    ports:
+      - "1514:1514"
+      - "1515:1515"
+      - "55000:55000"
+    environment:
+      - INDEXER_URL=https://wazuh.indexer:9200
+      - INDEXER_USERNAME=admin
+      - INDEXER_PASSWORD=${INDEXER_PASSWORD:-SecretPassword123!}
+      - WAZUH_API_USERS="wazuh:wazuh"
+    volumes:
+      - wazuh-manager-data:/var/ossec/data
+      - certs:/etc/ssl/certs
+    networks:
+      - wazuh_net
+    depends_on:
+      wazuh.indexer:
+        condition: service_healthy
+
+  # 4. Wazuh Dashboard
+  wazuh.dashboard:
+    image: wazuh/wazuh-dashboard:4.9.0
+    hostname: wazuh.dashboard
+    restart: always
+    ports:
+      - "5601:5601"
+    environment:
+      - INDEXER_URL=https://wazuh.indexer:9200
+      - WAZUH_API_URL=https://wazuh.manager:55000
+      - OPENSEARCH_PASSWORD=${INDEXER_PASSWORD:-SecretPassword123!}
+      - WAZUH_API_CREDENTIALS=wazuh:wazuh
+    volumes:
+      - certs:/usr/share/wazuh-dashboard/certs
+    networks:
+      - wazuh_net
+    depends_on:
+      - wazuh.manager
+
+networks:
+  wazuh_net:
+    name: wazuh_net
+    driver: bridge
+
+volumes:
+  certs:
+  wazuh-indexer-data:
+  wazuh-manager-data:
