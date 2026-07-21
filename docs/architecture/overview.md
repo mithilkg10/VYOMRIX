@@ -1,8 +1,8 @@
-# Architecture Overview: Vyorix Security Platform
+﻿# Architecture Overview: Vyomrix Security Platform
 
 ## High-Level Design
 
-Vyorix is built using a modern decoupled architecture. The frontend is a Next.js application that provides a unified, real-time dashboard for security analysts. It communicates via REST and WebSockets with a FastAPI backend. The backend acts as the central nervous system, interfacing with multiple specialized security engines and databases.
+Vyomrix is built using a modern decoupled architecture. The frontend is a Next.js application that provides a unified, real-time dashboard for security analysts. It communicates via REST and WebSockets with a FastAPI backend. The backend acts as the central nervous system, interfacing with multiple specialized security engines and databases.
 
 ### 1. Presentation Layer (Frontend)
 - **Framework:** Next.js with React
@@ -33,4 +33,4 @@ Vyorix is built using a modern decoupled architecture. The frontend is a Next.js
 - **CI/CD:** GitHub Actions (Linting, Pytest, CodeQL, Docker builds).
 
 ## Network Topology
-All services run within an isolated Docker network (`vyorix-network`). Traefik sits at the edge, listening on ports 80 and 443, and routes incoming traffic based on subdomains or paths to the appropriate internal container. Database and engine ports are not exposed directly to the host, ensuring security.
+All services run within an isolated Docker network (`Vyomrix-network`). Traefik sits at the edge, listening on ports 80 and 443, and routes incoming traffic based on subdomains or paths to the appropriate internal container. Database and engine ports are not exposed directly to the host, ensuring security.

@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+﻿from fastapi import APIRouter
 
 router = APIRouter()
 
@@ -6,6 +6,6 @@ router = APIRouter()
 async def health_check():
     return {
         "status": "ok",
-        "service": "Vyorix Backend API",
+        "service": "Vyomrix Backend API",
         "version": "1.0.0"
     }

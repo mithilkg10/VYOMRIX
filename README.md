@@ -1,10 +1,10 @@
-# Vyorix Security Platform
+﻿# Vyomrix Security Platform
 
-![Vyorix Logo](./assets/vyorix-logo.png)
+![Vyomrix Logo](./assets/Vyomrix-logo.png)
 
 **Enterprise-Grade AI-Powered XDR and SOC Platform**
 
-Vyorix is a comprehensive, unified cybersecurity platform designed for modern Security Operations Centers. Built with Next.js, FastAPI, and powered by Gemini AI, Vyorix integrates SIEM capabilities, Web Application Firewalls, Honeypots, Threat Intelligence, and automated Incident Response into a single, polished glassmorphism dashboard.
+Vyomrix is a comprehensive, unified cybersecurity platform designed for modern Security Operations Centers. Built with Next.js, FastAPI, and powered by Gemini AI, Vyomrix integrates SIEM capabilities, Web Application Firewalls, Honeypots, Threat Intelligence, and automated Incident Response into a single, polished glassmorphism dashboard.
 
 ## Features
 
@@ -14,13 +14,13 @@ Vyorix is a comprehensive, unified cybersecurity platform designed for modern Se
 - **AI Phishing Analyzer:** Upload emails or attachments for AI-driven risk assessment and OCR extraction.
 - **Threat Intelligence:** Automated lookup of IOCs via VirusTotal, AbuseIPDB, and AlienVault OTX.
 - **Honeypot Monitoring:** Integrated OpenCanary deployment to detect network reconnaissance.
-- **Web Application Firewall:** DVWA protected by a configured WAF, managed from Vyorix.
+- **Web Application Firewall:** DVWA protected by a configured WAF, managed from Vyomrix.
 - **Detection Engineering:** Interactive Sigma/YARA rule generation and testing.
 - **MITRE ATT&CK Matrix:** Interactive mapping of organizational coverage against TTPs.
 
 ## Architecture Overview
 
-Vyorix uses a microservices architecture orchestrated by Docker Compose and Traefik:
+Vyomrix uses a microservices architecture orchestrated by Docker Compose and Traefik:
 
 - **Frontend:** Next.js (React, TypeScript, TailwindCSS, shadcn/ui, Framer Motion)
 - **Backend:** FastAPI (Python, Async, Celery, PostgreSQL, Redis)
@@ -54,4 +54,4 @@ See [Architecture Documentation](./docs/architecture/overview.md) for detailed d
 *(Add screenshots here)*
 
 ---
-*Vyorix - CyberFusion XDR Platform*
+*Vyomrix - CyberFusion XDR Platform*

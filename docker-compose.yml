@@ -1,9 +1,9 @@
-version: '3.8'
+﻿version: '3.8'
 
 services:
   traefik:
     image: traefik:v2.10
-    container_name: vyorix-traefik
+    container_name: Vyomrix-traefik
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
@@ -17,41 +17,41 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
-      - vyorix-network
+      - Vyomrix-network
     restart: unless-stopped
 
   postgres:
     image: postgres:15-alpine
-    container_name: vyorix-postgres
+    container_name: Vyomrix-postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-vyorix_admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vyorix_secure_password_123!}
-      POSTGRES_DB: ${POSTGRES_DB:-vyorix_db}
+      POSTGRES_USER: ${POSTGRES_USER:-Vyomrix_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Vyomrix_secure_password_123!}
+      POSTGRES_DB: ${POSTGRES_DB:-Vyomrix_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - vyorix-network
+      - Vyomrix-network
     restart: unless-stopped
     expose:
       - "5432"
 
   redis:
     image: redis:7-alpine
-    container_name: vyorix-redis
+    container_name: Vyomrix-redis
     networks:
-      - vyorix-network
+      - Vyomrix-network
     restart: unless-stopped
     expose:
       - "6379"
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    container_name: vyorix-rabbitmq
+    container_name: Vyomrix-rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
     networks:
-      - vyorix-network
+      - Vyomrix-network
     restart: unless-stopped
     ports:
       - "15672:15672" # Management UI
@@ -59,8 +59,8 @@ services:
       - "5672"
 
 networks:
-  vyorix-network:
-    name: vyorix-network
+  Vyomrix-network:
+    name: Vyomrix-network
     driver: bridge
 
 volumes:
