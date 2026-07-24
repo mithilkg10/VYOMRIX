@@ -1,8 +1,8 @@
-﻿# Vyomrix Security Platform
+# Vyomrix Security Platform
 
 ![Vyomrix Logo](./assets/Vyomrix-logo.png)
 
-**Enterprise-Grade AI-Powered XDR and SOC Platform**
+**Enterprise-Grade AI-Powered XDR and SOC Platform (v1.0)**
 
 Vyomrix is a comprehensive, unified cybersecurity platform designed for modern Security Operations Centers. Built with Next.js, FastAPI, and powered by Gemini AI, Vyomrix integrates SIEM capabilities, Web Application Firewalls, Honeypots, Threat Intelligence, and automated Incident Response into a single, polished glassmorphism dashboard.
 
@@ -17,17 +17,16 @@ Vyomrix is a comprehensive, unified cybersecurity platform designed for modern S
 - **Web Application Firewall:** DVWA protected by a configured WAF, managed from Vyomrix.
 - **Detection Engineering:** Interactive Sigma/YARA rule generation and testing.
 - **MITRE ATT&CK Matrix:** Interactive mapping of organizational coverage against TTPs.
+- **Enterprise Features:** Role-Based Access Control (RBAC), Audit Logging, Automated HTML/PDF Reporting, and Webhook Notifications (Slack/Teams).
 
 ## Architecture Overview
 
-Vyomrix uses a microservices architecture orchestrated by Docker Compose and Traefik:
+Vyomrix uses a microservices architecture orchestrated by Docker Compose:
 
 - **Frontend:** Next.js (React, TypeScript, TailwindCSS, shadcn/ui, Framer Motion)
 - **Backend:** FastAPI (Python, Async, Celery, PostgreSQL, Redis)
 - **Engines:** Wazuh, OpenCanary, ModSecurity/SafeLine
 - **AI Engine:** Google Gemini, FAISS, LangChain
-
-See [Architecture Documentation](./docs/architecture/overview.md) for detailed diagrams and data flow.
 
 ## Getting Started
 
@@ -36,22 +35,46 @@ See [Architecture Documentation](./docs/architecture/overview.md) for detailed d
 - Python 3.10+
 - Node.js 18+
 
-### Installation
-1. Clone the repository.
-2. Copy `.env.example` to `.env` and fill in your API keys (e.g., Gemini, VirusTotal).
-3. Start the core infrastructure:
+### Installation & Execution (Local Development)
+
+1. **Clone the repository.**
+2. **Environment Setup:** Copy `.env.example` to `.env` in the root and in the `backend/` folder. Fill in your API keys (e.g., Gemini, VirusTotal).
+3. **Start the Infrastructure Stack:**
    ```bash
-   docker-compose up -d
+   # Starts PostgreSQL and Redis
+   docker-compose up -d postgres redis
    ```
-4. Follow the specific setup guides for the frontend, backend, and security engines in the `docs` folder.
+4. **Backend Setup:**
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   
+   # Run DB Migrations
+   python -m alembic upgrade head
+   
+   # Seed the Database with Super Admin and Demo Data
+   $env:PYTHONPATH="."  # (Or export PYTHONPATH="." on Linux/Mac)
+   python app/core/db_seeder.py
+   
+   # Start the Backend Server
+   uvicorn app.main:app --reload --port 8000
+   ```
+5. **Frontend Setup:**
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+### Default Credentials
+After running the seeder, you can log in with:
+- **Email:** `admin@vyomrix.com`
+- **Password:** `vyomrix_admin`
 
 ## Documentation
 - [Architecture Overview](./docs/architecture/overview.md)
 - [API Reference](./docs/api-reference.md)
 - [Threat Model](./docs/threat-model.md)
-
-## Screenshots
-*(Add screenshots here)*
 
 ---
 *Vyomrix - CyberFusion XDR Platform*

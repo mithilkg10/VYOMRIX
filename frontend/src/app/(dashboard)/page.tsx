@@ -2,14 +2,36 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Activity, ShieldAlert, Brain, Server } from "lucide-react";
+import { Activity, ShieldAlert, Brain, Server, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 export default function DashboardPage() {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleTimeString());
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setTimeout(() => {
+      setLastUpdated(new Date().toLocaleTimeString());
+      setIsRefreshing(false);
+    }, 1000);
+  };
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold tracking-tight">Security Overview</h1>
-        <p className="text-muted-foreground">Monitor and respond to threats across your environment.</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl font-semibold tracking-tight">Security Overview</h1>
+          <p className="text-muted-foreground">Monitor and respond to threats across your environment.</p>
+        </div>
+        <div className="flex items-center gap-3 self-start md:self-auto">
+          <span className="text-xs text-muted-foreground">Last updated: {lastUpdated}</span>
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">

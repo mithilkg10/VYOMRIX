@@ -1,15 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.database import get_db
 from .schemas import Asset
 from .services import AssetManager
+from .repository import AssetRepository
 
 router = APIRouter(prefix="/assets", tags=["Asset Intelligence"])
 
-# In a real app this would use a database session dependency
-_manager = AssetManager()
-
-def get_asset_manager() -> AssetManager:
-    return _manager
+def get_asset_manager(db: AsyncSession = Depends(get_db)) -> AssetManager:
+    repo = AssetRepository(db)
+    return AssetManager(repository=repo)
 
 @router.get("/", response_model=List[Asset])
 async def list_assets(manager: AssetManager = Depends(get_asset_manager)):

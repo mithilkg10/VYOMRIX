@@ -123,8 +123,8 @@ export default function IncidentsPage() {
                 <li>Review web application logs for bypass attempts.</li>
               </ul>
             </div>
-            <Button size="sm" className="w-full">
-              Execute Playbook
+            <Button size="sm" className="w-full" disabled>
+              Execute Playbook (Coming in v1.1)
             </Button>
           </CardContent>
         </Card>

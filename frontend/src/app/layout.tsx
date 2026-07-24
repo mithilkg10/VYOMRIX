@@ -1,4 +1,4 @@
-import type { Metadata } from "react";
+import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -15,8 +15,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Vyomrix | Enterprise Cybersecurity Platform",
-  description: "AI-Powered XDR and SOC Platform",
+  title: "Vyomrix Security Platform",
+  description: "AI-Powered XDR and SOC Platform (Codename: Vyomrix)",
 };
 
 export default function RootLayout({

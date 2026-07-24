@@ -1,9 +1,9 @@
-﻿version: '3.8'
+version: '3.8'
 
 services:
   traefik:
     image: traefik:v2.10
-    container_name: Vyomrix-traefik
+    container_name: vyomrix-traefik
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
@@ -17,50 +17,87 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
-      - Vyomrix-network
+      - vyomrix-network
     restart: unless-stopped
 
   postgres:
     image: postgres:15-alpine
-    container_name: Vyomrix-postgres
+    container_name: vyomrix-postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-Vyomrix_admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Vyomrix_secure_password_123!}
-      POSTGRES_DB: ${POSTGRES_DB:-Vyomrix_db}
+      POSTGRES_USER: ${POSTGRES_USER:-vyomrix}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vyomrix_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-vyomrix}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - Vyomrix-network
+      - vyomrix-network
     restart: unless-stopped
-    expose:
-      - "5432"
+    ports:
+      - "5433:5432"
 
   redis:
     image: redis:7-alpine
-    container_name: Vyomrix-redis
+    container_name: vyomrix-redis
     networks:
-      - Vyomrix-network
+      - vyomrix-network
     restart: unless-stopped
-    expose:
-      - "6379"
+    ports:
+      - "6379:6379"
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    container_name: Vyomrix-rabbitmq
+    container_name: vyomrix-rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
     networks:
-      - Vyomrix-network
+      - vyomrix-network
     restart: unless-stopped
     ports:
+      - "5672:5672"
       - "15672:15672" # Management UI
-    expose:
-      - "5672"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vyomrix-backend
+    environment:
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_USER=vyomrix
+      - POSTGRES_PASSWORD=vyomrix_secret
+      - POSTGRES_DB=vyomrix
+      - POSTGRES_PORT=5432
+      - RABBITMQ_HOST=rabbitmq
+      - REDIS_HOST=redis
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    ports:
+      - "8000:8000"
+    networks:
+      - vyomrix-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: vyomrix-frontend
+    depends_on:
+      - backend
+    environment:
+      - BACKEND_API_URL=http://backend:8000
+    ports:
+      - "3000:3000"
+    networks:
+      - vyomrix-network
+    restart: unless-stopped
 
 networks:
-  Vyomrix-network:
-    name: Vyomrix-network
+  vyomrix-network:
+    name: vyomrix-network
     driver: bridge
 
 volumes:

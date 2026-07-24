@@ -1,21 +1,21 @@
-﻿from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "Vyomrix Security Platform"
+    PROJECT_NAME: str = "Vyomrix Enterprise Security Platform"
     API_V1_STR: str = "/api/v1"
     
     # Security
-    SECRET_KEY: str = "change_me_in_production"
+    SECRET_KEY: str = "vyomrix-super-secret-key-change-in-production"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080
     
     # Postgres
-    POSTGRES_USER: str = "Vyomrix_admin"
-    POSTGRES_PASSWORD: str = "Vyomrix_secure_password_123!"
+    POSTGRES_USER: str = "vyomrix"
+    POSTGRES_PASSWORD: str = "vyomrix_secret"
     POSTGRES_SERVER: str = "localhost"
-    POSTGRES_PORT: str = "5432"
-    POSTGRES_DB: str = "Vyomrix_db"
+    POSTGRES_PORT: str = "5433"
+    POSTGRES_DB: str = "vyomrix"
     
     # Redis
     REDIS_HOST: str = "localhost"

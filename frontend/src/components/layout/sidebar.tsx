@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { logoutAction } from "@/app/(auth)/login/actions";
 import { 
   Shield, LayoutDashboard, Activity, AlertTriangle, 
   TerminalSquare, FileWarning, Search, BrainCircuit,
@@ -12,13 +13,13 @@ import { cn } from "@/lib/utils";
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Incidents", href: "/incidents", icon: AlertTriangle },
-  { name: "Threat Hunting", href: "/hunting", icon: Search },
   { name: "AI SOC Analyst", href: "/ai-soc", icon: BrainCircuit },
-  { name: "Phishing Analyzer", href: "/phishing", icon: FileWarning },
   { name: "SIEM Logs", href: "/siem", icon: TerminalSquare },
-  { name: "Honeypot", href: "/honeypot", icon: Network },
   { name: "WAF Events", href: "/waf", icon: Shield },
   { name: "Threat Intel", href: "/threat-intel", icon: Database },
+  { name: "Threat Hunting", href: "/hunting", icon: Search },
+  { name: "Phishing Analyzer", href: "/phishing", icon: FileWarning },
+  { name: "Honeypot", href: "/honeypot", icon: Network },
   { name: "Reports", href: "/reports", icon: FileText },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
@@ -28,9 +29,12 @@ export function Sidebar() {
 
   return (
     <div className="flex h-full w-64 flex-col border-r bg-sidebar">
-      <div className="flex h-14 items-center border-b px-4">
-        <Shield className="mr-2 h-6 w-6 text-primary" />
-        <span className="font-semibold tracking-tight text-sidebar-foreground">Vyomrix</span>
+      <div className="flex flex-col h-14 justify-center border-b px-4">
+        <div className="flex items-center">
+          <Shield className="mr-2 h-6 w-6 text-primary" />
+          <span className="font-semibold tracking-tight text-sidebar-foreground">Vyomrix Security Platform</span>
+        </div>
+        <span className="text-[10px] text-muted-foreground uppercase tracking-widest pl-8 -mt-1">Codename: Vyomrix</span>
       </div>
       <div className="flex-1 overflow-y-auto py-4">
         <nav className="space-y-1 px-2">
@@ -60,16 +64,22 @@ export function Sidebar() {
           })}
         </nav>
       </div>
-      <div className="border-t p-4">
+      <div className="border-t p-4 flex flex-col gap-2">
         <div className="flex items-center gap-3 rounded-lg border bg-card p-3 shadow-sm">
           <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold">
-            JD
+            MK
           </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium">John Doe</span>
-            <span className="text-xs text-muted-foreground">Lead Analyst</span>
+          <div className="flex flex-col overflow-hidden">
+            <span className="text-sm font-medium truncate">Mithil K Gowda</span>
+            <span className="text-xs text-muted-foreground truncate">Super Admin • admin@mkg.com</span>
           </div>
         </div>
+        
+        <form action={logoutAction} className="w-full">
+          <button type="submit" className="w-full text-left px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 rounded-md transition-colors">
+            Logout
+          </button>
+        </form>
       </div>
     </div>
   );

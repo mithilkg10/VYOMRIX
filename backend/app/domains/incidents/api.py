@@ -1,14 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.database import get_db
 from .schemas import Incident, IncidentStatus
 from .services import IncidentManager
+from .repository import IncidentRepository
 
 router = APIRouter(prefix="/incidents", tags=["Incident Response"])
 
-_manager = IncidentManager()
-
-def get_incident_manager() -> IncidentManager:
-    return _manager
+def get_incident_manager(db: AsyncSession = Depends(get_db)) -> IncidentManager:
+    repo = IncidentRepository(db)
+    return IncidentManager(repository=repo)
 
 @router.get("/", response_model=List[Incident])
 async def list_incidents(manager: IncidentManager = Depends(get_incident_manager)):

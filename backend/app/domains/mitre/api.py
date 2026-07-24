@@ -1,14 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.database import get_db
 from .schemas import Technique, TacticCoverage
 from .services import MitreManager
+from .repository import MitreRepository
 
 router = APIRouter(prefix="/mitre", tags=["MITRE ATT&CK Platform"])
 
-_manager = MitreManager()
-
-def get_mitre_manager() -> MitreManager:
-    return _manager
+def get_mitre_manager(db: AsyncSession = Depends(get_db)) -> MitreManager:
+    repo = MitreRepository(db)
+    return MitreManager(repository=repo)
 
 @router.get("/techniques", response_model=List[Technique])
 async def list_techniques(manager: MitreManager = Depends(get_mitre_manager)):
