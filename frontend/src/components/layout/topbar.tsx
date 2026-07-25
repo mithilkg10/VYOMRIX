@@ -1,31 +1,10 @@
 "use client";
 
-import { Bell, Search, Command } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Bell, Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { SearchInput } from "@/components/system/data-display";
+import { CommandPalette, ThemeToggle } from "@/components/system/overlays";
 
-export function Topbar() {
-  return (
-    <header className="flex h-14 items-center gap-4 border-b bg-background px-6 lg:h-[60px]">
-      <div className="w-full flex-1">
-        <div className="relative max-w-md">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search alerts, incidents, IPs..."
-            className="w-full appearance-none bg-background pl-8 shadow-none"
-          />
-          <div className="absolute right-2.5 top-2.5 hidden items-center gap-1 sm:flex">
-            <Command className="h-3 w-3 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">K</span>
-          </div>
-        </div>
-      </div>
-      <div className="flex items-center gap-4">
-        <button className="relative rounded-full p-2 hover:bg-accent text-muted-foreground">
-          <Bell className="h-5 w-5" />
-          <span className="absolute right-1.5 top-1.5 flex h-2 w-2 rounded-full bg-destructive"></span>
-        </button>
-      </div>
-    </header>
-  );
+export function Topbar({ onMenu }: { onMenu: () => void }) {
+  return <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-6"><Button variant="ghost" size="icon-sm" className="lg:hidden" onClick={onMenu} aria-label="Open navigation"><Menu /></Button><div className="hidden max-w-md flex-1 lg:block"><SearchInput label="Search platform data" placeholder="Search alerts, incidents, IPs…" /></div><div className="ml-auto flex items-center gap-1"><CommandPalette /><ThemeToggle /><Button variant="ghost" size="icon-sm" className="relative" aria-label="View notifications"><Bell /><span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive ring-2 ring-background" aria-hidden="true" /></Button></div></header>;
 }

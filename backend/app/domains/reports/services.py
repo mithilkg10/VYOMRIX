@@ -62,12 +62,7 @@ class ReportService:
             
             <div class="section">
                 <h2>MITRE ATT&CK Mapping</h2>
-                <p>Not fully populated in mock data.</p>
-            </div>
-            
-            <div class="section">
-                <h2>AI Analysis & Recommendations</h2>
-                <p>AI recommendations have been applied to this incident.</p>
+                <p>No direct mappings are included in this report.</p>
             </div>
         </body>
         </html>

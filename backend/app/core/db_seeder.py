@@ -1,49 +1,21 @@
 import asyncio
 import uuid
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy.future import select
 
 from app.core.database import AsyncSessionLocal
-from app.domains.auth.services import AuthService
-from app.domains.auth.schemas import UserCreate
 from app.domains.assets.models import AssetModel
 from app.domains.incidents.models import IncidentModel
 from app.domains.mitre.models import TechniqueModel
 
-async def seed_data():
-    async with AsyncSessionLocal() as session:
-        auth_service = AuthService()
-        
-        # 1. Super Admin
-        admin = await auth_service.get_user_by_email(session, "admin@vyomrix.com")
-        if not admin:
-            user_in = UserCreate(
-                email="admin@vyomrix.com",
-                password="vyomrix_admin",
-                full_name="Vyomrix Super Admin",
-                role="Super Admin",
-                permissions=["admin:all"]
-            )
-            await auth_service.create_user(session, user_in)
-            print("Successfully seeded Super Admin user.")
-        
-        # 2. Analyst User
-        analyst = await auth_service.get_user_by_email(session, "analyst@vyomrix.com")
-        if not analyst:
-            user_in = UserCreate(
-                email="analyst@vyomrix.com",
-                password="vyomrix_analyst",
-                full_name="SOC Analyst",
-                role="SOC Analyst",
-                permissions=["incidents:read", "incidents:write", "assets:read"]
-            )
-            await auth_service.create_user(session, user_in)
-            print("Successfully seeded Analyst user.")
 
-        # 3. Assets
+async def seed_data():
+    """Seed non-sensitive demonstration operational data."""
+    async with AsyncSessionLocal() as session:
         result = await session.execute(select(AssetModel))
         if not result.scalars().first():
             from app.domains.assets.schemas import AssetType, Environment, Criticality
+
             assets = [
                 AssetModel(id=f"AST-{uuid.uuid4().hex[:8]}", hostname="web-prod-01", ip_address="10.0.1.10", os_name="Ubuntu 22.04", asset_type=AssetType.SERVER, environment=Environment.PRODUCTION, criticality=Criticality.HIGH, owner="IT", tags=["prod", "web"]),
                 AssetModel(id=f"AST-{uuid.uuid4().hex[:8]}", hostname="db-prod-01", ip_address="10.0.1.20", os_name="Ubuntu 20.04", asset_type=AssetType.SERVER, environment=Environment.PRODUCTION, criticality=Criticality.CRITICAL, owner="DBA", tags=["prod", "db"]),
@@ -53,7 +25,6 @@ async def seed_data():
             await session.commit()
             print("Successfully seeded Assets.")
 
-        # 4. MITRE
         result = await session.execute(select(TechniqueModel))
         if not result.scalars().first():
             techniques = [
@@ -64,7 +35,6 @@ async def seed_data():
             await session.commit()
             print("Successfully seeded MITRE Techniques.")
 
-        # 5. Incidents
         result = await session.execute(select(IncidentModel))
         if not result.scalars().first():
             incidents = [
@@ -75,6 +45,7 @@ async def seed_data():
             session.add_all(incidents)
             await session.commit()
             print("Successfully seeded Incidents.")
+
 
 if __name__ == "__main__":
     asyncio.run(seed_data())

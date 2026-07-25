@@ -1,12 +1,14 @@
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Vyomrix Enterprise Security Platform"
     API_V1_STR: str = "/api/v1"
+    ENVIRONMENT: str = "development"
     
     # Security
-    SECRET_KEY: str = "vyomrix-super-secret-key-change-in-production"
+    SECRET_KEY: str = "development-only-secret-change-before-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080
     
@@ -30,6 +32,25 @@ class Settings(BaseSettings):
     # AI Providers
     GEMINI_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
+
+    # Wazuh integration (must be configured explicitly; no development fallback data)
+    WAZUH_MANAGER_URL: Optional[str] = None
+    WAZUH_MANAGER_USER: Optional[str] = None
+    WAZUH_MANAGER_PASSWORD: Optional[str] = None
+    WAZUH_INDEXER_URL: Optional[str] = None
+    WAZUH_INDEXER_USER: Optional[str] = None
+    WAZUH_INDEXER_PASSWORD: Optional[str] = None
+    ALLOWED_ORIGINS: str = "http://localhost:3000"
+
+    @model_validator(mode="after")
+    def validate_production_security(self):
+        if self.ENVIRONMENT.lower() == "production" and (self.SECRET_KEY == "development-only-secret-change-before-production" or len(self.SECRET_KEY) < 32):
+            raise ValueError("Production requires a unique SECRET_KEY of at least 32 characters.")
+        return self
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",") if origin.strip()]
 
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:

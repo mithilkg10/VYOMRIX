@@ -48,7 +48,7 @@ class WAFManager:
             user_agent=request.get("headers", {}).get("User-Agent", "Unknown"),
             rule_id=str(primary_msg.get("details", {}).get("ruleId", "0")),
             rule_message=rule_message,
-            action_taken="blocked" # Assuming blocking mode for CRS
+            action_taken=str(transaction.get("action", "Unknown")),
         )
         
         # Determine specific EventBus Event Type

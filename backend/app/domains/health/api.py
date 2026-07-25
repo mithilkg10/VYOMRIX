@@ -25,6 +25,6 @@ async def readiness_probe(db: AsyncSession = Depends(get_db)):
     try:
         await db.execute(text("SELECT 1"))
         return {"status": "ready", "database": "connected"}
-    except Exception as e:
+    except Exception:
         from fastapi import HTTPException
-        raise HTTPException(status_code=503, detail=f"Database unavailable: {str(e)}")
+        raise HTTPException(status_code=503, detail={"status": "degraded", "database": "unavailable", "message": "Database readiness check failed."})

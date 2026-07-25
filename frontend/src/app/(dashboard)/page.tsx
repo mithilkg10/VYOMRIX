@@ -1,132 +1,45 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Activity, ShieldAlert, Brain, Server, RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Activity, RefreshCw, Server, ShieldAlert, Users } from "lucide-react";
+import { EmptyState, LoadingState, PartialDataState, StatusMessage, UnauthorizedState } from "@/components/system/feedback";
+import { MetricCard, PageContainer, PageHeader, SectionHeader } from "@/components/system/page";
+import { StatusBadge } from "@/components/system/data-display";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { type DashboardData, getDashboardData } from "@/lib/api/dashboard";
+
+const formatTime = (value: string) => new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+const failureLabel = (name: string, status: number) => status === 401 ? `${name} unauthorized` : status === 502 || status === 503 || status === 504 ? `${name} unavailable` : `${name} did not load`;
 
 export default function DashboardPage() {
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleTimeString());
-
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => {
-      setLastUpdated(new Date().toLocaleTimeString());
-      setIsRefreshing(false);
-    }, 1000);
-  };
-
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-semibold tracking-tight">Security Overview</h1>
-          <p className="text-muted-foreground">Monitor and respond to threats across your environment.</p>
-        </div>
-        <div className="flex items-center gap-3 self-start md:self-auto">
-          <span className="text-xs text-muted-foreground">Last updated: {lastUpdated}</span>
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {/* Metric Cards */}
-        <Card className="shadow-none border-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Threat Score</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">84/100</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-destructive font-medium">+14%</span> from last week
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-none border-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Alerts</CardTitle>
-            <ShieldAlert className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">1,245</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-success font-medium">-5%</span> from last week
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-none border-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">AI Insights</CardTitle>
-            <Brain className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">12</div>
-            <p className="text-xs text-muted-foreground">
-              Actionable recommendations
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-none border-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monitored Assets</CardTitle>
-            <Server className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">342</div>
-            <p className="text-xs text-muted-foreground">
-              4 critical assets offline
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        {/* Main Chart Placeholder */}
-        <Card className="col-span-4 shadow-none border-border">
-          <CardHeader>
-            <CardTitle>Attack Timeline</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px] flex items-center justify-center border-t border-dashed m-4 rounded">
-            <p className="text-muted-foreground text-sm">Interactive Chart Component (Recharts)</p>
-          </CardContent>
-        </Card>
-
-        {/* Recent Incidents List */}
-        <Card className="col-span-3 shadow-none border-border">
-          <CardHeader>
-            <CardTitle>Recent Incidents</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[
-                { title: "Multiple Failed Logins", source: "Auth0", severity: "High", time: "10m ago" },
-                { title: "Suspicious PowerShell Execution", source: "Wazuh", severity: "Critical", time: "1h ago" },
-                { title: "SQL Injection Attempt", source: "WAF", severity: "Medium", time: "3h ago" },
-                { title: "Honeypot SSH Connection", source: "OpenCanary", severity: "Low", time: "5h ago" },
-              ].map((incident, i) => (
-                <div key={i} className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium leading-none">{incident.title}</p>
-                    <p className="text-xs text-muted-foreground">Detected by {incident.source} • {incident.time}</p>
-                  </div>
-                  <Badge variant={incident.severity === 'Critical' ? 'destructive' : 'secondary'} className="rounded-sm">
-                    {incident.severity}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
+  const [data, setData] = useState<DashboardData | null>(null); const [loading, setLoading] = useState(true); const [refreshing, setRefreshing] = useState(false); const [lastRefresh, setLastRefresh] = useState<string | null>(null); const active = useRef(false);
+  const load = useCallback(async (refresh = false) => { if (active.current) return; active.current = true; if (refresh) setRefreshing(true); else setLoading(true); try { const next = await getDashboardData(); setData(next); setLastRefresh(new Date().toLocaleTimeString()); } finally { active.current = false; setLoading(false); setRefreshing(false); } }, []);
+  useEffect(() => { void Promise.resolve().then(() => load()); }, [load]);
+  const failures = useMemo(() => !data ? [] : ([ ["Incidents", data.incidents.error], ["Assets", data.assets.error], ["SIEM alerts", data.alerts.error], ["SIEM agents", data.agents.error] ] as const).flatMap(([name, error]) => error ? [failureLabel(name, error.status)] : []), [data]);
+  if (loading && !data) return <PageContainer><LoadingState label="Loading operational security data…" /></PageContainer>;
+  if (!data) return <PageContainer><EmptyState title="No dashboard data" description="No source results are available." /></PageContainer>;
+  const allUnauthorized = [data.incidents, data.assets, data.alerts, data.agents].every((source) => source.error?.status === 401);
+  if (allUnauthorized) return <PageContainer><UnauthorizedState title="Access unavailable" description="You are not authorized to view operational data." /></PageContainer>;
+  const incidents = data.incidents.data; const assets = data.assets.data; const alerts = data.alerts.data; const agents = data.agents.data;
+  const openIncidents = incidents.filter((item) => !["Resolved", "Closed"].includes(item.status)); const highIncidents = incidents.filter((item) => item.severity === "High" || item.severity === "Critical"); const highAlerts = alerts.filter((item) => item.severity >= 7); const activeAgents = agents.filter((item) => item.status.toLowerCase() === "active"); const unhealthyAssets = assets.filter((item) => item.health_status !== "Healthy");
+  return <PageContainer>
+    <StatusMessage>{refreshing ? "Refreshing dashboard data" : lastRefresh ? `Dashboard refreshed at ${lastRefresh}` : "Dashboard data loaded"}</StatusMessage>
+    <PageHeader title="Security Overview" description="Current loaded results from incidents, assets, and SIEM sources." actions={<div className="flex items-center gap-2"><span className="hidden text-xs text-muted-foreground sm:inline">{lastRefresh ? `Last refresh ${lastRefresh}` : "Not refreshed"}</span><Button variant="outline" size="sm" onClick={() => void load(true)} disabled={refreshing} aria-busy={refreshing}><RefreshCw className={refreshing ? "animate-spin" : ""} aria-hidden="true" />Refresh</Button></div>} />
+    {failures.length > 0 && <PartialDataState failedSources={failures} />}
+    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Operational summary">
+      <MetricCard label="Loaded incidents" value={data.incidents.error ? "Unavailable" : String(incidents.length)} detail={data.incidents.error ? failureLabel("Incident service", data.incidents.error.status) : `${openIncidents.length} open or in progress`} icon={ShieldAlert} tone={highIncidents.length ? "warning" : "default"} />
+      <MetricCard label="Loaded assets" value={data.assets.error ? "Unavailable" : String(assets.length)} detail={data.assets.error ? failureLabel("Asset inventory", data.assets.error.status) : `${unhealthyAssets.length} unhealthy in results`} icon={Server} tone={unhealthyAssets.length ? "warning" : "default"} />
+      <MetricCard label="Loaded alerts" value={data.alerts.error ? "Unavailable" : String(alerts.length)} detail={data.alerts.error ? failureLabel("SIEM alerts", data.alerts.error.status) : `${highAlerts.length} high-severity in results`} icon={Activity} tone={highAlerts.length ? "danger" : "default"} />
+      <MetricCard label="Loaded agents" value={data.agents.error ? "Unavailable" : String(agents.length)} detail={data.agents.error ? failureLabel("SIEM agents", data.agents.error.status) : `${activeAgents.length} active in results`} icon={Users} />
+    </section>
+    <section className="grid gap-6 xl:grid-cols-2"><Distribution title="Incident severity distribution" values={["Critical", "High", "Medium", "Low"].map((severity) => ({ label: severity, count: incidents.filter((item) => item.severity === severity).length }))} unavailable={Boolean(data.incidents.error)} /><Distribution title="Alert severity distribution" values={["High (7+)", "Lower (0–6)"].map((label, index) => ({ label, count: index === 0 ? highAlerts.length : alerts.length - highAlerts.length }))} unavailable={Boolean(data.alerts.error)} /></section>
+    <section className="grid gap-6 xl:grid-cols-2"><RecentIncidents incidents={incidents} unavailable={Boolean(data.incidents.error)} /><RecentAlerts alerts={alerts} unavailable={Boolean(data.alerts.error)} /></section>
+    <section className="grid gap-6 xl:grid-cols-2"><section className="panel p-5"><SectionHeader title="Asset posture" description={data.assets.error ? failureLabel("Asset inventory", data.assets.error.status) : "Reported health and internet exposure from loaded assets."} actions={<Button size="sm" variant="outline" render={<Link href="/assets">View assets</Link>} />}/>{!data.assets.error && (assets.length ? <dl className="mt-4 grid gap-3 sm:grid-cols-3"><Posture label="Internet-facing" value={assets.filter((asset) => asset.is_internet_facing).length} /><Posture label="Unhealthy" value={unhealthyAssets.length} /><Posture label="Wazuh agents" value={assets.filter((asset) => asset.has_wazuh_agent).length} /></dl> : <EmptyState title="No assets" description="The asset inventory returned no records." compact />)}</section><section className="panel p-5"><SectionHeader title="SIEM integration status" description="Current result status for independently loaded SIEM sources." actions={<Button size="sm" variant="outline" render={<Link href="/siem/agents">View agents</Link>} />}/><div className="mt-4 space-y-3"><Integration name="Alerts" error={data.alerts.error} /><Integration name="Agents" error={data.agents.error} /></div></section></section>
+  </PageContainer>;
 }
+function Distribution({ title, unavailable, values }: { title: string; unavailable: boolean; values: { label: string; count: number }[] }) { return <section className="panel p-5"><h2 className="text-base font-semibold">{title}</h2>{unavailable ? <p className="mt-4 text-sm text-muted-foreground">Unavailable</p> : <ul className="mt-4 grid gap-3 sm:grid-cols-2">{values.map((value) => <li className="rounded-md border p-3" key={value.label}><span className="text-sm text-muted-foreground">{value.label}</span><p className="mt-1 text-xl font-semibold">{value.count}</p></li>)}</ul>}</section>; }
+function RecentIncidents({ incidents, unavailable }: { incidents: DashboardData["incidents"]["data"]; unavailable: boolean }) { return <section className="panel p-5"><SectionHeader title="Recent incidents" description="Latest loaded incident records." actions={<Button size="sm" variant="outline" render={<Link href="/incidents">View all incidents</Link>} />}/>{unavailable ? <p className="mt-4 text-sm text-muted-foreground">Incident records unavailable.</p> : incidents.length ? <ul className="mt-4 divide-y">{[...incidents].sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at)).slice(0, 5).map((item) => <li className="py-3" key={item.id}><p className="font-medium">{item.title}</p><p className="mt-1 text-xs text-muted-foreground">{item.id} · {formatTime(item.updated_at)}</p></li>)}</ul> : <EmptyState title="No incidents" description="No incident records were returned." compact />}</section>; }
+function RecentAlerts({ alerts, unavailable }: { alerts: DashboardData["alerts"]["data"]; unavailable: boolean }) { return <section className="panel p-5"><SectionHeader title="Recent SIEM alerts" description="Latest loaded SIEM alert records." actions={<Button size="sm" variant="outline" render={<Link href="/siem/alerts">View SIEM alerts</Link>} />}/>{unavailable ? <p className="mt-4 text-sm text-muted-foreground">SIEM alerts unavailable.</p> : alerts.length ? <ul className="mt-4 divide-y">{[...alerts].sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp)).slice(0, 5).map((item) => <li className="py-3" key={item.id}><p className="font-medium">{item.title}</p><p className="mt-1 text-xs text-muted-foreground">{item.rule_id} · {formatTime(item.timestamp)}</p></li>)}</ul> : <EmptyState title="No SIEM alerts" description="No alert records were returned." compact />}</section>; }
+function Posture({ label, value }: { label: string; value: number }) { return <div className="rounded-md border p-3"><dt className="text-xs text-muted-foreground">{label}</dt><dd className="mt-1 text-xl font-semibold">{value}</dd></div>; }
+function Integration({ error, name }: { error: DashboardData["alerts"]["error"]; name: string }) { const label = error ? failureLabel(name, error.status) : "Loaded"; return <div className="flex items-center justify-between rounded-md border p-3"><span className="text-sm font-medium">{name}</span><StatusBadge status={error ? "warning" : "success"}>{label}</StatusBadge></div>; }

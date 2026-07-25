@@ -32,8 +32,8 @@ async def generate_report(
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate report: {str(e)}")
+    except Exception:
+        raise HTTPException(status_code=500, detail="Report generation could not be completed.")
 
 @router.get("/download/{report_id}")
 async def download_report(report_id: str):

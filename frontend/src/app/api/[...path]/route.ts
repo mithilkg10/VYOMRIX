@@ -10,7 +10,7 @@ type RouteContext = { params: Promise<{ path: string[] }> };
 async function refreshAccessToken(refreshToken: string) {
   const response = await fetch(
     getBackendApiUrl() + "/api/v1/auth/refresh?refresh_token=" + encodeURIComponent(refreshToken),
-    { method: "POST", cache: "no-store" },
+    { method: "POST", cache: "no-store", signal: AbortSignal.timeout(15_000) },
   );
   if (!response.ok) return null;
   return response.json() as Promise<{ access_token: string; refresh_token?: string }>;
@@ -19,6 +19,9 @@ async function refreshAccessToken(refreshToken: string) {
 async function proxy(request: NextRequest, { params }: RouteContext) {
   if (!METHODS.has(request.method)) return NextResponse.json({ detail: "Method not allowed" }, { status: 405 });
   const { path } = await params;
+  if (path.length === 0 || path.some((segment) => segment === "." || segment === ".." || segment.includes("\\"))) {
+    return NextResponse.json({ detail: "Invalid API path" }, { status: 400 });
+  }
   const cookieStore = await cookies();
   const refreshToken = cookieStore.get(REFRESH_TOKEN_COOKIE)?.value;
   const targetUrl = new URL("/api/v1/" + path.join("/"), getBackendApiUrl());
@@ -33,6 +36,7 @@ async function proxy(request: NextRequest, { params }: RouteContext) {
     },
     body: requestBody,
     cache: "no-store",
+    signal: AbortSignal.timeout(15_000),
   });
   let upstream = await forward(cookieStore.get(ACCESS_TOKEN_COOKIE)?.value);
   let refreshed: { access_token: string; refresh_token?: string } | null = null;

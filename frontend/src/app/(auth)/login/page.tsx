@@ -1,61 +1,27 @@
 "use client";
 
-import { useTransition, useState } from "react";
+import { useState, useTransition } from "react";
+import { AlertCircle, Eye, EyeOff, LockKeyhole, ShieldCheck } from "lucide-react";
 import { loginAction } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    startTransition(async () => {
-      const res = await loginAction(formData);
-      if (res?.error) {
-        setError(res.error);
-      }
-    });
-  };
-
-  return (
-    <Card className="border-border shadow-lg">
-      <CardHeader className="space-y-1 text-center">
-        <CardTitle className="text-2xl tracking-tight">Sign in</CardTitle>
-        <CardDescription>
-          Enter your credentials to access Vyomrix Security Platform
-        </CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          {error && (
-            <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md">
-              <AlertCircle className="h-4 w-4" />
-              {error}
-            </div>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" placeholder="admin@vyomrix.com" required disabled={isPending} />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-            </div>
-            <Input id="password" name="password" type="password" required disabled={isPending} />
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button className="w-full" type="submit" disabled={isPending}>
-            {isPending ? "Signing In..." : "Sign In"}
-          </Button>
-        </CardFooter>
+  const [showPassword, setShowPassword] = useState(false);
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); setError(null); const formData = new FormData(event.currentTarget); startTransition(async () => { const result = await loginAction(formData); if (result?.error) setError(result.error); }); };
+  return <section className="w-full max-w-md rounded-2xl border border-sky-200/15 bg-card/85 p-1 shadow-2xl shadow-slate-950/40 backdrop-blur-xl">
+    <div className="rounded-[0.9rem] border border-white/5 bg-background/35 p-6 sm:p-8">
+      <div className="mb-7 space-y-3"><div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[.16em] text-cyan-300"><ShieldCheck className="h-4 w-4" /> Secure operator access</div><h1 className="text-3xl font-semibold tracking-tight">Sign in to <span className="gradient-text">MKG SOC</span></h1><p className="text-sm leading-6 text-muted-foreground">Access the security operations workspace and its protected telemetry.</p></div>
+      <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+        {error && <div role="alert" className="flex gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />{error}</div>}
+        <div className="space-y-2"><Label htmlFor="email">Work email</Label><Input id="email" name="email" type="email" autoComplete="email" placeholder="name@company.com" required disabled={isPending} className="h-11 bg-background/60" /></div>
+        <div className="space-y-2"><Label htmlFor="password">Password</Label><div className="relative"><Input id="password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" required disabled={isPending} className="h-11 bg-background/60 pr-11" /><Button type="button" variant="ghost" size="icon-sm" className="absolute right-1 top-1" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((value) => !value)}>{showPassword ? <EyeOff /> : <Eye />}</Button></div></div>
+        <Button className="h-11 w-full bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500 font-semibold text-slate-950 hover:opacity-90" type="submit" disabled={isPending}>{isPending ? "Authenticating..." : "Sign in securely"}</Button>
       </form>
-    </Card>
-  );
+      <div className="mt-6 flex items-center gap-2 border-t border-border pt-4 text-xs text-muted-foreground"><LockKeyhole className="h-3.5 w-3.5 text-success" /> Session cookies are protected and scoped to this platform.</div>
+    </div>
+  </section>;
 }

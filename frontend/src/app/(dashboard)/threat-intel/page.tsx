@@ -1,112 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { FormEvent, useState } from "react";
+import { Search } from "lucide-react";
+import { ErrorState, IntegrationUnavailableState, UnauthorizedState } from "@/components/system/feedback";
+import { PageContainer, PageHeader } from "@/components/system/page";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Search, Globe, Shield, Activity, ShieldAlert } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ApiError } from "@/lib/api/client";
+import { IOC_TYPES, type IocType, type ThreatIntelResult, lookupIoc } from "@/lib/api/threat-intel";
 
 export default function ThreatIntelPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [hasSearched, setHasSearched] = useState(false);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) setHasSearched(true);
-  };
-
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold tracking-tight">Threat Intelligence</h1>
-        <p className="text-muted-foreground">Unified IOC enrichment via VirusTotal, AbuseIPDB, and AlienVault OTX.</p>
-      </div>
-
-      <Card className="shadow-none border-border bg-card">
-        <CardContent className="pt-6">
-          <form onSubmit={handleSearch} className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input 
-                type="search" 
-                placeholder="Search IPv4, IPv6, Domain, URL, Hash (MD5, SHA1, SHA256), or CVE..." 
-                className="pl-9"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <Button type="submit">Analyze IOC</Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      {hasSearched ? (
-        <div className="grid gap-6 md:grid-cols-3">
-          <Card className="md:col-span-1 shadow-none border-border">
-            <CardHeader>
-              <CardTitle>Risk Overview</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center py-6 gap-4">
-              <div className="flex h-32 w-32 items-center justify-center rounded-full border-[8px] border-destructive bg-destructive/10">
-                <span className="text-4xl font-bold text-destructive">94</span>
-              </div>
-              <Badge variant="destructive" className="text-sm px-4 py-1">CRITICAL RISK</Badge>
-              <p className="text-sm text-muted-foreground text-center">
-                This indicator is highly malicious and associated with known threat actors.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="md:col-span-2 shadow-none border-border">
-            <CardHeader>
-              <CardTitle>Provider Analysis</CardTitle>
-              <CardDescription>Consolidated reports from {searchQuery}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between border-b pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 bg-primary/20 rounded-md flex items-center justify-center">
-                      <Shield className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium leading-none">VirusTotal</p>
-                      <p className="text-sm text-muted-foreground mt-1">14 / 89 engines detected malicious activity.</p>
-                    </div>
-                  </div>
-                  <Badge variant="destructive">Malicious</Badge>
-                </div>
-
-                <div className="flex items-center justify-between border-b pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 bg-primary/20 rounded-md flex items-center justify-center">
-                      <Globe className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium leading-none">AbuseIPDB</p>
-                      <p className="text-sm text-muted-foreground mt-1">Confidence Score: 100%</p>
-                    </div>
-                  </div>
-                  <Badge variant="destructive">Malicious</Badge>
-                </div>
-
-                <div className="flex flex-wrap gap-2 pt-2">
-                  <Badge variant="outline" className="bg-muted">botnet</Badge>
-                  <Badge variant="outline" className="bg-muted">ssh-bruteforce</Badge>
-                  <Badge variant="outline" className="bg-muted">mirai</Badge>
-                  <Badge variant="outline" className="bg-muted">cve-2024-1234</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center h-64 border border-dashed rounded-lg bg-muted/10">
-          <ShieldAlert className="h-12 w-12 text-muted-foreground/50 mb-4" />
-          <p className="text-muted-foreground">Enter an indicator of compromise to begin enrichment.</p>
-        </div>
-      )}
-    </div>
-  );
+  const [iocValue, setIocValue] = useState(""); const [iocType, setIocType] = useState<IocType>("ip"); const [result, setResult] = useState<ThreatIntelResult | null>(null); const [error, setError] = useState<ApiError | null>(null); const [validationError, setValidationError] = useState<string | null>(null); const [submitting, setSubmitting] = useState(false);
+  const submit = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); const value = iocValue.trim(); if (submitting) return; if (!isValidIoc(value, iocType)) { setValidationError(`Enter a valid ${iocType.toUpperCase()} indicator.`); return; } setSubmitting(true); setError(null); setValidationError(null); setResult(null); try { setResult(await lookupIoc(value, iocType)); } catch (cause) { setError(cause instanceof ApiError ? cause : new ApiError("Threat intelligence could not be loaded.", 500)); } finally { setSubmitting(false); } };
+  return <PageContainer>
+    <PageHeader title="Threat Intelligence" description="Look up a submitted indicator only through configured intelligence providers." />
+    <section className="panel p-5"><h2 className="text-base font-semibold">IOC lookup</h2><p className="mt-1 text-sm text-muted-foreground">Results are provider-reported facts where available; they are not a verdict or an automated response.</p><form className="mt-5 flex flex-col gap-3 sm:flex-row" onSubmit={submit}><div className="min-w-0 flex-1"><label className="sr-only" htmlFor="ioc-value">Indicator value</label><Input id="ioc-value" value={iocValue} onChange={(event) => setIocValue(event.target.value)} placeholder="Enter an indicator" disabled={submitting} aria-describedby={validationError ? "ioc-error" : undefined} required /></div><label className="sr-only" htmlFor="ioc-type">Indicator type</label><select id="ioc-type" className="h-10 rounded-md border bg-background px-3 text-sm" value={iocType} onChange={(event) => setIocType(event.target.value as IocType)} disabled={submitting}>{IOC_TYPES.map((type) => <option key={type} value={type}>{type.toUpperCase()}</option>)}</select><Button type="submit" disabled={submitting}><Search aria-hidden="true" />{submitting ? "Looking up…" : "Lookup IOC"}</Button></form>{validationError && <p id="ioc-error" className="mt-3 text-sm text-destructive" role="alert">{validationError}</p>}</section>
+    {error?.status === 401 && <UnauthorizedState title="Access unavailable" description="You are not authorized to query threat intelligence." />}
+    {error && error.status !== 401 && (error.status === 502 || error.status === 503 || error.status === 504 ? <IntegrationUnavailableState integrationName="Threat intelligence" reason="No configured provider responded." guidance="Your submitted indicator was not classified." /> : <ErrorState title="Lookup failed" description="Threat intelligence could not be loaded. Try again." />)}
+    {result && <ResultCard result={result} />}
+  </PageContainer>;
 }
+function ResultCard({ result }: { result: ThreatIntelResult }) { return <section className="panel p-5"><h2 className="font-semibold">Lookup result</h2><dl className="mt-4 grid gap-4 sm:grid-cols-2"><Detail label="Indicator" value={result.ioc_value} /><Detail label="Type" value={result.ioc_type.toUpperCase()} /><Detail label="Provider classification" value={result.risk_level} /><Detail label="Provider score" value={`${result.risk_score} / 100`} /><Detail label="Tags" value={result.tags.length ? result.tags.join(", ") : "Not provided"} /><Detail label="Providers" value={result.providers.length ? result.providers.map((provider) => provider.provider_name).join(", ") : "No intelligence found"} /></dl><p className="mt-5 text-sm text-muted-foreground">Verify provider-reported information before making an analyst decision.</p></section>; }
+function Detail({ label, value }: { label: string; value: string }) { return <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt><dd className="mt-1 break-words text-sm">{value}</dd></div>; }
+function isValidIoc(value: string, type: IocType) { if (!value) return false; if (type === "ip") return /^((25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(25[0-5]|2[0-4]\d|1?\d?\d)$/.test(value) || value.includes(":"); if (type === "domain") return /^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i.test(value); if (type === "url") { try { const url = new URL(value); return url.protocol === "http:" || url.protocol === "https:"; } catch { return false; } } if (type === "hash") return /^[a-f0-9]{32}$|^[a-f0-9]{40}$|^[a-f0-9]{64}$|^[a-f0-9]{128}$/i.test(value); return /^CVE-\d{4}-\d{4,}$/i.test(value); }

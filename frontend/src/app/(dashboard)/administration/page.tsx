@@ -1,0 +1,2 @@
+import { IntegrationUnavailableState } from "@/components/system/feedback"; import { PageContainer, PageHeader } from "@/components/system/page";
+export default function AdministrationPage() { return <PageContainer><PageHeader title="Administration" description="User-management workflows are not exposed by a safe administration contract." /><IntegrationUnavailableState integrationName="Administration" reason="No user list, role management, or credential workflow is available." guidance="Backend authorization remains authoritative." /></PageContainer>; }

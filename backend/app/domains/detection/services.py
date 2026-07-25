@@ -4,44 +4,7 @@ from .schemas import SigmaRule, ValidationResult, RuleStatus, RuleSeverity
 
 class DetectionManager:
     def __init__(self):
-        self._rules: Dict[str, SigmaRule] = self._seed_rules()
-        
-    def _seed_rules(self) -> Dict[str, SigmaRule]:
-        raw_yaml = """
-title: Suspicious PowerShell Execution
-id: 1111-2222-3333-4444
-status: active
-description: Detects encoded or bypass execution policies in PowerShell.
-author: Vyomrix SOC
-date: 2026-07-21
-logsource:
-    product: windows
-    service: powershell
-detection:
-    selection:
-        EventID: 4104
-        ScriptBlockText|contains: 
-            - '-ExecutionPolicy Bypass'
-            - '-enc'
-    condition: selection
-level: high
-tags:
-    - attack.execution
-    - attack.t1059.001
-"""
-        parsed = yaml.safe_load(raw_yaml)
-        rule = SigmaRule(
-            id=parsed["id"],
-            title=parsed["title"],
-            description=parsed.get("description", ""),
-            logsource=parsed.get("logsource", {}),
-            detection=parsed.get("detection", {}),
-            level=RuleSeverity.HIGH,
-            status=RuleStatus.ACTIVE,
-            tags=parsed.get("tags", []),
-            raw_yaml=raw_yaml
-        )
-        return {rule.id: rule}
+        self._rules: Dict[str, SigmaRule] = {}
 
     def validate_sigma_rule(self, raw_yaml: str) -> ValidationResult:
         errors = []

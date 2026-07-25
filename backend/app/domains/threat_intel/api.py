@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from .schemas import NormalizedIOC, IOCType
-from .services import ThreatIntelEngine
+from .services import ThreatIntelEngine, ThreatIntelIntegrationUnavailable
 
 router = APIRouter(prefix="/threat-intel", tags=["Threat Intelligence"])
 
@@ -17,5 +17,7 @@ async def lookup_ioc(
     Look up an Indicator of Compromise (IOC) across all configured Threat Intelligence providers.
     Normalizes the response and calculates a unified risk score.
     """
-    # Note: In a production app, we would wrap this in a Redis caching layer.
-    return await engine.enrich_ioc(ioc_value, ioc_type)
+    try:
+        return await engine.enrich_ioc(ioc_value, ioc_type)
+    except ThreatIntelIntegrationUnavailable as exc:
+        raise HTTPException(status_code=503, detail="Threat intelligence integrations are not configured.") from exc

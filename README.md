@@ -4,6 +4,10 @@
 
 **Enterprise-Grade AI-Powered XDR and SOC Platform (v1.0)**
 
+## Production readiness
+
+See [RELEASE_READINESS.md](./RELEASE_READINESS.md) for supported workflows, required production variables, deployment commands, validation, and known limitations. AI generation, notifications, safe user management, analyst WAF/Deception feeds, and provider-backed threat intelligence are intentionally unavailable until their production integrations are configured.
+
 Vyomrix is a comprehensive, unified cybersecurity platform designed for modern Security Operations Centers. Built with Next.js, FastAPI, and powered by Gemini AI, Vyomrix integrates SIEM capabilities, Web Application Firewalls, Honeypots, Threat Intelligence, and automated Incident Response into a single, polished glassmorphism dashboard.
 
 ## Features
@@ -52,7 +56,7 @@ Vyomrix uses a microservices architecture orchestrated by Docker Compose:
    # Run DB Migrations
    python -m alembic upgrade head
    
-   # Seed the Database with Super Admin and Demo Data
+   # Seed demo operational data (no user credentials are stored in source)
    $env:PYTHONPATH="."  # (Or export PYTHONPATH="." on Linux/Mac)
    python app/core/db_seeder.py
    
@@ -66,10 +70,26 @@ Vyomrix uses a microservices architecture orchestrated by Docker Compose:
    npm run dev
    ```
 
-### Default Credentials
-After running the seeder, you can log in with:
-- **Email:** `admin@vyomrix.com`
-- **Password:** `vyomrix_admin`
+### Development account
+
+Create an explicit local development account only when needed. Do not commit the
+password or place it in an example environment file.
+
+```powershell
+$env:ENVIRONMENT = "development"
+$env:DEV_SEED_ENABLED = "true"
+$env:DEV_SEED_EMAIL = "admin@mkg.local"
+$env:DEV_SEED_PASSWORD = "<choose-a-local-password>"
+python -m app.core.seed_development_user
+```
+
+The command uses the existing bcrypt authentication service, creates the account
+only if it does not already exist, and refuses to run outside local, test, or
+development environments.
+
+To reset only that explicitly named local account, also set
+`DEV_SEED_RESET_PASSWORD=true`. This remains unavailable outside the allowed
+development environments.
 
 ## Documentation
 - [Architecture Overview](./docs/architecture/overview.md)

@@ -7,7 +7,12 @@ from datetime import datetime
 BASE_URL = "http://localhost:8000/api/v1"
 
 async def authenticate(client):
-    res = await client.post(f"{BASE_URL}/auth/login", data={"username": "admin@vyomrix.com", "password": "vyomrix_admin"})
+    email = os.getenv("BENCHMARK_EMAIL")
+    password = os.getenv("BENCHMARK_PASSWORD")
+    if not email or not password:
+        raise RuntimeError("Set BENCHMARK_EMAIL and BENCHMARK_PASSWORD before running the benchmark.")
+
+    res = await client.post(f"{BASE_URL}/auth/login", data={"username": email, "password": password})
     if res.status_code == 200:
         return res.json()["access_token"]
     raise Exception(f"Auth failed: {res.text}")

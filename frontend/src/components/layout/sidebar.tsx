@@ -1,86 +1,62 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { logoutAction } from "@/app/(auth)/login/actions";
-import { 
-  Shield, LayoutDashboard, Activity, AlertTriangle, 
-  TerminalSquare, FileWarning, Search, BrainCircuit,
-  Database, Network, FileText, Settings 
-} from "lucide-react";
+import { AlertTriangle, BrainCircuit, ChevronDown, ChevronLeft, Database, FileText, FileWarning, FlaskConical, LayoutDashboard, Network, Radar, Search, Settings, Shield, ShieldCheck, TerminalSquare, Users, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
-const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Incidents", href: "/incidents", icon: AlertTriangle },
-  { name: "AI SOC Analyst", href: "/ai-soc", icon: BrainCircuit },
-  { name: "SIEM Logs", href: "/siem", icon: TerminalSquare },
-  { name: "WAF Events", href: "/waf", icon: Shield },
-  { name: "Threat Intel", href: "/threat-intel", icon: Database },
-  { name: "Threat Hunting", href: "/hunting", icon: Search },
-  { name: "Phishing Analyzer", href: "/phishing", icon: FileWarning },
-  { name: "Honeypot", href: "/honeypot", icon: Network },
-  { name: "Reports", href: "/reports", icon: FileText },
-  { name: "Settings", href: "/settings", icon: Settings },
+type NavigationItem = { name: string; href: string; icon: typeof LayoutDashboard; preview?: boolean };
+type NavigationGroup = { name: string; items: NavigationItem[] };
+
+const groups: NavigationGroup[] = [
+  { name: "Command", items: [{ name: "Dashboard", href: "/", icon: LayoutDashboard }, { name: "Incidents", href: "/incidents", icon: AlertTriangle }, { name: "Assets", href: "/assets", icon: ShieldCheck, preview: true }, { name: "SIEM", href: "/siem", icon: TerminalSquare, preview: true }, { name: "AI SOC", href: "/ai-soc", icon: BrainCircuit, preview: true }] },
+  { name: "Detection", items: [{ name: "Detection Engineering", href: "/detection", icon: FlaskConical, preview: true }, { name: "WAF", href: "/waf", icon: Shield, preview: true }, { name: "Honeypot", href: "/honeypot", icon: Network }, { name: "Phishing", href: "/phishing", icon: FileWarning }] },
+  { name: "Intelligence", items: [{ name: "Threat Intelligence", href: "/threat-intel", icon: Database }, { name: "MITRE ATT&CK", href: "/mitre", icon: Radar, preview: true }, { name: "Threat Hunting", href: "/hunting", icon: Search }, { name: "Deception", href: "/deception", icon: Network, preview: true }] },
+  { name: "Operations", items: [{ name: "Reports", href: "/reports", icon: FileText }, { name: "Audit Log", href: "/audit", icon: FileText }, { name: "Notifications", href: "/notifications", icon: FileWarning }] },
+  { name: "Administration", items: [{ name: "System Health", href: "/system", icon: Settings }, { name: "Administration", href: "/administration", icon: Users }, { name: "Settings", href: "/settings", icon: Settings }] },
 ];
 
-export function Sidebar() {
+export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => Object.fromEntries(groups.map((group) => [group.name, true])));
 
-  return (
-    <div className="flex h-full w-64 flex-col border-r bg-sidebar">
-      <div className="flex flex-col h-14 justify-center border-b px-4">
-        <div className="flex items-center">
-          <Shield className="mr-2 h-6 w-6 text-primary" />
-          <span className="font-semibold tracking-tight text-sidebar-foreground">Vyomrix Security Platform</span>
-        </div>
-        <span className="text-[10px] text-muted-foreground uppercase tracking-widest pl-8 -mt-1">Codename: Vyomrix</span>
+  useEffect(() => {
+    if (!open) return;
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    document.addEventListener("keydown", closeOnEscape);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.removeEventListener("keydown", closeOnEscape); document.body.style.overflow = previousOverflow; };
+  }, [open, onClose]);
+
+  const isActive = (href: string) => pathname === href || (href !== "/" && pathname.startsWith(href + "/"));
+  const toggleGroup = (name: string) => setExpandedGroups((current) => ({ ...current, [name]: !current[name] }));
+
+  return <>
+    {open && <button className="fixed inset-0 z-40 bg-slate-950/65 backdrop-blur-sm lg:hidden" aria-label="Close navigation" onClick={onClose} />}
+    <aside className={cn("fixed inset-y-0 left-0 z-50 flex -translate-x-full flex-col border-r border-sky-200/10 bg-sidebar/95 shadow-2xl backdrop-blur-xl transition-[width,transform] duration-200 ease-out lg:static lg:z-auto lg:translate-x-0", collapsed ? "lg:w-20" : "w-72 lg:w-72", open && "w-72 translate-x-0")} aria-label="Primary navigation">
+      <div className="flex h-16 items-center border-b border-sky-200/10 px-3">
+        <Link href="/" className="flex min-w-0 flex-1 items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={onClose}>
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-cyan-400 via-blue-500 to-violet-500 text-slate-950 shadow-lg shadow-cyan-500/20"><Shield className="h-5 w-5" aria-hidden="true" /></span>
+          <span className={cn("min-w-0", collapsed && "lg:hidden")}><span className="block truncate text-sm font-semibold tracking-tight">MKG SOC Platform</span><span className="block text-[10px] uppercase tracking-[.16em] text-muted-foreground">Powered by Vyomrix</span></span>
+        </Link>
+        <Button variant="ghost" size="icon-sm" className="lg:hidden" onClick={onClose} aria-label="Close navigation"><X /></Button>
       </div>
-      <div className="flex-1 overflow-y-auto py-4">
-        <nav className="space-y-1 px-2">
-          {navigation.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={cn(
-                  "group flex items-center rounded-md px-3 py-2 text-sm font-medium",
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                )}
-              >
-                <item.icon
-                  className={cn(
-                    "mr-3 h-5 w-5 flex-shrink-0",
-                    isActive ? "text-sidebar-accent-foreground" : "text-muted-foreground group-hover:text-sidebar-foreground"
-                  )}
-                  aria-hidden="true"
-                />
-                {item.name}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
-      <div className="border-t p-4 flex flex-col gap-2">
-        <div className="flex items-center gap-3 rounded-lg border bg-card p-3 shadow-sm">
-          <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold">
-            MK
-          </div>
-          <div className="flex flex-col overflow-hidden">
-            <span className="text-sm font-medium truncate">Mithil K Gowda</span>
-            <span className="text-xs text-muted-foreground truncate">Super Admin • admin@mkg.com</span>
-          </div>
-        </div>
-        
-        <form action={logoutAction} className="w-full">
-          <button type="submit" className="w-full text-left px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 rounded-md transition-colors">
-            Logout
+      <nav className="flex-1 overflow-y-auto px-2 py-3">
+        {groups.map((group) => <section key={group.name} className="mb-3">
+          <button type="button" onClick={() => toggleGroup(group.name)} className={cn("flex h-8 w-full items-center rounded-md px-2 text-left text-[10px] font-semibold uppercase tracking-[.15em] text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", collapsed && "lg:justify-center")} aria-expanded={expandedGroups[group.name]}>
+            <span className={collapsed ? "lg:hidden" : ""}>{group.name}</span><ChevronDown className={cn("ml-auto h-3.5 w-3.5 transition-transform", !expandedGroups[group.name] && "-rotate-90", collapsed && "lg:ml-0")} aria-hidden="true" />
           </button>
-        </form>
-      </div>
-    </div>
-  );
+          {expandedGroups[group.name] && <div className="space-y-0.5">{group.items.map((item) => { const active = isActive(item.href); const label = item.preview ? `${item.name} (Preview)` : item.name; return <Link key={item.name} href={item.href} title={collapsed ? label : undefined} onClick={onClose} className={cn("group interactive relative flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", active ? "bg-gradient-to-r from-cyan-400/15 via-blue-500/12 to-violet-500/12 text-foreground shadow-[inset_2px_0_0_#22d3ee]" : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground", collapsed && "lg:justify-center lg:px-2")}><span className={cn("grid h-6 w-6 place-items-center rounded-md", active ? "bg-primary/15 text-primary" : "text-muted-foreground group-hover:text-primary")}><item.icon className="h-4 w-4" aria-hidden="true" /></span><span className={cn("min-w-0 truncate", collapsed && "lg:hidden")}>{item.name}</span>{item.preview && <Badge variant="outline" className={cn("ml-auto px-1.5 py-0 text-[10px] font-medium text-muted-foreground", collapsed && "lg:hidden")}>Preview</Badge>}</Link>; })}</div>}
+        </section>)}
+      </nav>
+      <div className="border-t border-sky-200/10 p-3"><div className={cn("mb-2 rounded-xl border border-sky-200/10 bg-card/60 p-3", collapsed && "lg:p-2")}><p className={cn("text-sm font-medium", collapsed && "lg:hidden")}>Mithil K Gowda</p><p className={cn("text-xs text-muted-foreground", collapsed && "lg:hidden")}>Super Admin</p><Users className={cn("hidden h-5 w-5 text-primary", collapsed && "lg:block")} aria-hidden="true" /></div><form action={logoutAction}><Button type="submit" variant="destructive" className={cn("w-full justify-start", collapsed && "lg:justify-center lg:px-2")} title={collapsed ? "Logout" : undefined}><X className="h-4 w-4" /><span className={collapsed ? "lg:hidden" : ""}>Logout</span></Button></form></div>
+      <Button variant="ghost" size="icon-sm" className="absolute -right-4 top-20 hidden rounded-full border bg-card shadow-lg lg:inline-flex" onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}><ChevronLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} /></Button>
+    </aside>
+  </>;
 }

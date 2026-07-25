@@ -1,24 +1,2 @@
 import { Shield } from "lucide-react";
-
-export default function AuthLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 sm:p-8">
-      <div className="absolute top-8 left-8 flex items-center gap-2">
-        <Shield className="h-6 w-6 text-primary" />
-        <span className="text-xl font-bold tracking-tight">Vyomrix</span>
-      </div>
-      <div className="w-full max-w-md">
-        {children}
-      </div>
-      <div className="absolute bottom-8 text-center text-sm text-muted-foreground">
-        <p>
-          &copy; {new Date().getFullYear()} Vyomrix Security. All rights reserved.
-        </p>
-      </div>
-    </div>
-  );
-}
+export default function AuthLayout({ children }: { children: React.ReactNode }) { return <div className="relative grid min-h-dvh overflow-hidden bg-[#020617] p-4 text-foreground sm:p-8 lg:grid-cols-[1fr_minmax(24rem,30rem)] lg:items-center lg:gap-16 lg:px-[clamp(2rem,8vw,10rem)]"><div className="pointer-events-none absolute inset-0 opacity-70 [background-image:linear-gradient(hsl(199_89%_48%_/_0.08)_1px,transparent_1px),linear-gradient(90deg,hsl(199_89%_48%_/_0.08)_1px,transparent_1px),radial-gradient(circle_at_20%_20%,hsl(189_94%_43%_/_0.18),transparent_28rem),radial-gradient(circle_at_80%_70%,hsl(258_90%_66%_/_0.16),transparent_28rem)] [background-size:48px_48px,48px_48px,auto,auto]" /><div className="relative hidden lg:block"><div className="mb-8 flex items-center gap-3"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-cyan-400 via-blue-500 to-violet-500 text-slate-950"><Shield className="h-7 w-7" /></span><div><p className="text-xl font-semibold">MKG SOC Platform</p><p className="text-xs uppercase tracking-[.16em] text-muted-foreground">Powered by Vyomrix</p></div></div><p className="max-w-lg text-4xl font-semibold leading-tight tracking-tight">Defend with clarity. <span className="gradient-text">Respond with confidence.</span></p><p className="mt-5 max-w-md text-base leading-7 text-muted-foreground">A focused command centre for security operations, incident response, and intelligence-led decisions.</p></div><div className="relative mx-auto w-full lg:mx-0">{children}<p className="mt-5 text-center text-xs text-muted-foreground lg:text-left">MKG SOC Platform · Powered by Vyomrix</p></div></div>; }

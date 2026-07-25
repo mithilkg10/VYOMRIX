@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from .schemas import ChatRequest, ChatResponse
-from .services import AIEngine
+from .services import AIEngine, AIIntegrationUnavailable
 
 router = APIRouter(prefix="/ai", tags=["AI Security Intelligence"])
 
@@ -16,4 +16,7 @@ async def chat_with_ai(
     Interact with the Vyomrix AI Security Intelligence Platform.
     Requires structured context and agent role.
     """
-    return await engine.chat(request)
+    try:
+        return await engine.chat(request)
+    except AIIntegrationUnavailable as exc:
+        raise HTTPException(status_code=503, detail="AI services are not configured.") from exc
