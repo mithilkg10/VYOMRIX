@@ -5,7 +5,7 @@ services:
     image: traefik:v2.10
     container_name: vyomrix-traefik
     command:
-      - "--api.insecure=true"
+      - "--api.dashboard=false"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
@@ -13,7 +13,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080" # Traefik Dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
@@ -24,16 +23,14 @@ services:
     image: postgres:15-alpine
     container_name: vyomrix-postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-vyomrix}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vyomrix_secret}
-      POSTGRES_DB: ${POSTGRES_DB:-vyomrix}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - vyomrix-network
     restart: unless-stopped
-    ports:
-      - "5433:5432"
 
   redis:
     image: redis:7-alpine
@@ -41,21 +38,16 @@ services:
     networks:
       - vyomrix-network
     restart: unless-stopped
-    ports:
-      - "6379:6379"
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: vyomrix-rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?set RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:?set RABBITMQ_PASS}
     networks:
       - vyomrix-network
     restart: unless-stopped
-    ports:
-      - "5672:5672"
-      - "15672:15672" # Management UI
 
   backend:
     build:
@@ -64,18 +56,18 @@ services:
     container_name: vyomrix-backend
     environment:
       - POSTGRES_SERVER=postgres
-      - POSTGRES_USER=vyomrix
-      - POSTGRES_PASSWORD=vyomrix_secret
-      - POSTGRES_DB=vyomrix
+      - POSTGRES_USER=${POSTGRES_USER:?set POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:?set POSTGRES_DB}
       - POSTGRES_PORT=5432
       - RABBITMQ_HOST=rabbitmq
       - REDIS_HOST=redis
+      - SECRET_KEY=${SECRET_KEY:?set SECRET_KEY}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:?set ALLOWED_ORIGINS}
     depends_on:
       - postgres
       - redis
       - rabbitmq
-    ports:
-      - "8000:8000"
     networks:
       - vyomrix-network
     restart: unless-stopped

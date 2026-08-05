@@ -10,5 +10,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+RUN useradd --system --create-home appuser && chown -R appuser:appuser /app
+USER appuser
+
 # Run DB Migrations and start server
-CMD ["sh", "-c", "alembic upgrade head && python -m app.core.db_seeder && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
