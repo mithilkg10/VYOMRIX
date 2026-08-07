@@ -1,9 +1,11 @@
 import asyncio
 import httpx
 import json
+import pytest
 
 BASE_URL = "http://localhost:8000/api/v1"
 
+@pytest.mark.asyncio
 async def test_auth_failures():
     print("--- Testing Auth Failures ---")
     async with httpx.AsyncClient() as client:

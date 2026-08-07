@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, DateTime, Enum as SQLEnum, Text
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
-from datetime import datetime
+from datetime import datetime, timezone
 from app.core.database import Base
 from .schemas import RuleStatus, RuleSeverity
 
@@ -20,6 +20,6 @@ class SigmaRuleModel(Base):
     
     tags = Column(ARRAY(String), default=[])
     author = Column(String, nullable=True)
-    date = Column(DateTime, default=datetime.utcnow)
+    date = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     
     raw_yaml = Column(Text, nullable=False)

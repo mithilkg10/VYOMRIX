@@ -15,7 +15,7 @@ from app.domains.assets.models import AssetModel
 from app.domains.incidents.models import IncidentModel, TimelineEventModel, EvidenceModel
 from app.domains.detection.models import SigmaRuleModel
 from app.domains.mitre.models import TechniqueModel
-from app.domains.auth.models import UserModel
+from app.domains.auth.models import UserModel, RefreshSessionModel
 from app.domains.audit.models import AuditLogModel
 
 # this is the Alembic Config object, which provides

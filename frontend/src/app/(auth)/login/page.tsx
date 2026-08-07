@@ -6,6 +6,7 @@ import { loginAction } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Link from "next/link";
 
 export default function LoginPage() {
   const [isPending, startTransition] = useTransition();
@@ -18,7 +19,13 @@ export default function LoginPage() {
       <form className="space-y-5" onSubmit={handleSubmit} noValidate>
         {error && <div role="alert" className="flex gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />{error}</div>}
         <div className="space-y-2"><Label htmlFor="email">Work email</Label><Input id="email" name="email" type="email" autoComplete="email" placeholder="name@company.com" required disabled={isPending} className="h-11 bg-background/60" /></div>
-        <div className="space-y-2"><Label htmlFor="password">Password</Label><div className="relative"><Input id="password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" required disabled={isPending} className="h-11 bg-background/60 pr-11" /><Button type="button" variant="ghost" size="icon-sm" className="absolute right-1 top-1" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((value) => !value)}>{showPassword ? <EyeOff /> : <Eye />}</Button></div></div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            <Link href="/forgot-password" className="text-xs font-medium text-primary hover:underline">Forgot password?</Link>
+          </div>
+          <div className="relative"><Input id="password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" required disabled={isPending} className="h-11 bg-background/60 pr-11" /><Button type="button" variant="ghost" size="icon-sm" className="absolute right-1 top-1" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((value) => !value)}>{showPassword ? <EyeOff /> : <Eye />}</Button></div>
+        </div>
         <Button className="h-11 w-full bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500 font-semibold text-slate-950 hover:opacity-90" type="submit" disabled={isPending}>{isPending ? "Authenticating..." : "Sign in securely"}</Button>
       </form>
       <div className="mt-6 flex items-center gap-2 border-t border-border pt-4 text-xs text-muted-foreground"><LockKeyhole className="h-3.5 w-3.5 text-success" /> Session cookies are protected and scoped to this platform.</div>

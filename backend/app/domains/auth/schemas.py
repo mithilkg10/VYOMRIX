@@ -6,6 +6,7 @@ class Token(BaseModel):
     access_token: str
     refresh_token: Optional[str] = None
     token_type: str
+    session_id: str
 
 class TokenData(BaseModel):
     email: Optional[str] = None
@@ -27,3 +28,10 @@ class UserResponse(UserBase):
     last_login: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str

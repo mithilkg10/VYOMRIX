@@ -38,14 +38,16 @@ async def get_current_user(
         raise credentials_exception
     return user
 
+from .permissions import PermissionsEnum
+
 class RequirePermissions:
-    def __init__(self, required_permissions: List[str]):
-        self.required_permissions = required_permissions
+    def __init__(self, required_permissions: List[PermissionsEnum]):
+        self.required_permissions = [p.value for p in required_permissions]
 
     async def __call__(self, current_user: UserModel = Depends(get_current_user)):
         user_perms = set(current_user.permissions)
         # Super admin bypass
-        if "admin:all" in user_perms:
+        if PermissionsEnum.ADMIN_ALL.value in user_perms:
             return current_user
             
         for perm in self.required_permissions:

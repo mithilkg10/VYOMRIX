@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 class RuleStatus(str, Enum):
@@ -25,7 +25,7 @@ class SigmaRule(BaseModel):
     status: RuleStatus = RuleStatus.TESTING
     tags: List[str] = []
     author: Optional[str] = None
-    date: datetime = Field(default_factory=datetime.utcnow)
+    date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     
     # Internal Metadata
     raw_yaml: str

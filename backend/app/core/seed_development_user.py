@@ -43,13 +43,15 @@ async def seed_development_user() -> None:
             print(f"Development user already exists for {email}; no changes made.")
             return
 
+from app.domains.auth.permissions import RoleEnum, PermissionsEnum
+
         development_user = UserModel(
             id=f"USR-{uuid.uuid4().hex[:8]}",
             email=email,
             hashed_password=auth_service.get_password_hash(password),
             full_name="Local Development Administrator",
-            role="Super Admin",
-            permissions=["admin:all"],
+            role=RoleEnum.SUPER_ADMIN.value,
+            permissions=[PermissionsEnum.ADMIN_ALL.value],
         )
         session.add(development_user)
         await session.commit()

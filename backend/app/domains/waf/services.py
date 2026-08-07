@@ -1,6 +1,6 @@
 import uuid
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any
 from .schemas import WAFEvent, WAFEventType
 from app.core.events.bus import event_bus, Event, EventType
@@ -40,7 +40,7 @@ class WAFManager:
         
         event = WAFEvent(
             id=str(uuid.uuid4()),
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc).replace(tzinfo=None),
             event_type=event_type,
             src_ip=client_ip,
             http_method=request.get("method", "GET"),

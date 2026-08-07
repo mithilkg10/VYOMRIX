@@ -1,6 +1,6 @@
 import uuid
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any
 from .schemas import DeceptionEvent, HoneypotService
 from app.core.events.bus import event_bus, Event, EventType
@@ -32,7 +32,7 @@ class DeceptionManager:
         
         event = DeceptionEvent(
             id=str(uuid.uuid4()),
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc).replace(tzinfo=None),
             service=service,
             src_ip=raw_log.get("src_host", "0.0.0.0"),
             src_port=raw_log.get("src_port", 0),

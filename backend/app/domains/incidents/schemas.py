@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 class IncidentStatus(str, Enum):
@@ -28,7 +28,7 @@ class Evidence(BaseModel):
     name: str
     type: str # e.g., "PCAP", "Log", "Screenshot"
     url: Optional[str] = None
-    uploaded_at: datetime = Field(default_factory=datetime.utcnow)
+    uploaded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
 class Playbook(BaseModel):
     id: str
@@ -42,8 +42,8 @@ class Incident(BaseModel):
     description: str
     severity: IncidentSeverity
     status: IncidentStatus = IncidentStatus.OPEN
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     closed_at: Optional[datetime] = None
     
     assigned_analyst: Optional[str] = None

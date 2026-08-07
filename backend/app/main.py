@@ -61,6 +61,9 @@ def create_app() -> FastAPI:
     app.include_router(incidents_api.router, prefix=f"{settings.API_V1_STR}", dependencies=protected_depends)
     app.include_router(reports_api.router, prefix=f"{settings.API_V1_STR}", dependencies=protected_depends)
     app.include_router(audit_api.router, prefix=f"{settings.API_V1_STR}", dependencies=protected_depends)
+    
+    from app.domains.search import api as search_api
+    app.include_router(search_api.router, prefix=f"{settings.API_V1_STR}", dependencies=protected_depends)
 
     @app.get(f"{settings.API_V1_STR}")
     async def api_root():

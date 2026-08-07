@@ -1,7 +1,7 @@
 import os
 import uuid
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
@@ -71,7 +71,7 @@ class ReportService:
         template = self.jinja_env.from_string(template_str)
         html_content = template.render(
             incident=incident,
-            date=datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+            date=datetime.now(timezone.utc).replace(tzinfo=None).strftime("%Y-%m-%d %H:%M:%S UTC")
         )
         
         file_id = f"report_{incident_id}_{uuid.uuid4().hex[:6]}.html"

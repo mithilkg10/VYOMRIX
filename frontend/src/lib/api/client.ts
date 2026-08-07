@@ -8,10 +8,20 @@ export class ApiError extends Error {
 type ApiRequestOptions = Omit<RequestInit, "body"> & { body?: unknown };
 
 export async function apiRequest<T>(path: string, { body, headers, ...options }: ApiRequestOptions = {}): Promise<T> {
+  const method = options.method || "GET";
+  const csrfToken = method !== "GET" && typeof document !== "undefined" 
+    ? document.cookie.split('; ').find(row => row.startsWith('csrf_token='))?.split('=')[1] 
+    : undefined;
+  
   const response = await fetch("/api/" + path.replace(/^\//, ""), {
     ...options,
-    headers: { Accept: "application/json", ...(body === undefined ? {} : { "Content-Type": "application/json" }), ...headers },
-    body: body === undefined ? undefined : JSON.stringify(body),
+    headers: { 
+      Accept: "application/json", 
+      ...(body === undefined ? {} : { "Content-Type": "application/json" }), 
+      ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
+      ...headers 
+    },
+    body: body === undefined ? undefined : (typeof body === "string" ? body : JSON.stringify(body)),
   });
   if (!response.ok) {
     const details = await response.json().catch(() => undefined);

@@ -55,8 +55,45 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           {expandedGroups[group.name] && <div className="space-y-0.5">{group.items.map((item) => { const active = isActive(item.href); const label = item.preview ? `${item.name} (Preview)` : item.name; return <Link key={item.name} href={item.href} title={collapsed ? label : undefined} onClick={onClose} className={cn("group interactive relative flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", active ? "bg-gradient-to-r from-cyan-400/15 via-blue-500/12 to-violet-500/12 text-foreground shadow-[inset_2px_0_0_#22d3ee]" : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground", collapsed && "lg:justify-center lg:px-2")}><span className={cn("grid h-6 w-6 place-items-center rounded-md", active ? "bg-primary/15 text-primary" : "text-muted-foreground group-hover:text-primary")}><item.icon className="h-4 w-4" aria-hidden="true" /></span><span className={cn("min-w-0 truncate", collapsed && "lg:hidden")}>{item.name}</span>{item.preview && <Badge variant="outline" className={cn("ml-auto px-1.5 py-0 text-[10px] font-medium text-muted-foreground", collapsed && "lg:hidden")}>Preview</Badge>}</Link>; })}</div>}
         </section>)}
       </nav>
-      <div className="border-t border-sky-200/10 p-3"><div className={cn("mb-2 rounded-xl border border-sky-200/10 bg-card/60 p-3", collapsed && "lg:p-2")}><p className={cn("text-sm font-medium", collapsed && "lg:hidden")}>Mithil K Gowda</p><p className={cn("text-xs text-muted-foreground", collapsed && "lg:hidden")}>Super Admin</p><Users className={cn("hidden h-5 w-5 text-primary", collapsed && "lg:block")} aria-hidden="true" /></div><form action={logoutAction}><Button type="submit" variant="destructive" className={cn("w-full justify-start", collapsed && "lg:justify-center lg:px-2")} title={collapsed ? "Logout" : undefined}><X className="h-4 w-4" /><span className={collapsed ? "lg:hidden" : ""}>Logout</span></Button></form></div>
+      <div className="border-t border-sky-200/10 p-3">
+        <UserProfile collapsed={collapsed} />
+        <form action={logoutAction}><Button type="submit" variant="destructive" className={cn("w-full justify-start", collapsed && "lg:justify-center lg:px-2")} title={collapsed ? "Logout" : undefined}><X className="h-4 w-4" /><span className={collapsed ? "lg:hidden" : ""}>Logout</span></Button></form>
+      </div>
       <Button variant="ghost" size="icon-sm" className="absolute -right-4 top-20 hidden rounded-full border bg-card shadow-lg lg:inline-flex" onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}><ChevronLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} /></Button>
     </aside>
   </>;
+}
+
+import { useQuery } from "@tanstack/react-query";
+import { authApi } from "@/lib/api/auth";
+
+function UserProfile({ collapsed }: { collapsed: boolean }) {
+  const { data: user, isLoading } = useQuery({
+    queryKey: ["auth", "me"],
+    queryFn: authApi.getCurrentUser,
+  });
+
+  if (isLoading) {
+    return (
+      <div className={cn("mb-2 rounded-xl border border-sky-200/10 bg-card/60 p-3 flex animate-pulse items-center", collapsed && "lg:p-2 lg:justify-center")}>
+        <div className="w-8 h-8 rounded-full bg-surface-sunken shrink-0" />
+        <div className={cn("ml-3 space-y-1.5", collapsed && "lg:hidden")}>
+          <div className="h-3 w-24 bg-surface-sunken rounded" />
+          <div className="h-2 w-16 bg-surface-sunken rounded" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
+  return (
+    <div className={cn("mb-2 rounded-xl border border-sky-200/10 bg-card/60 p-3 flex items-center", collapsed && "lg:p-2 lg:justify-center")} title={collapsed ? `${user.full_name || user.email} - ${user.role}` : undefined}>
+      <Users className={cn("h-8 w-8 text-primary p-1.5 bg-primary/10 rounded-full shrink-0", collapsed && "lg:block")} aria-hidden="true" />
+      <div className={cn("ml-3 min-w-0 flex-1", collapsed && "lg:hidden")}>
+        <p className="text-sm font-medium truncate">{user.full_name || user.email}</p>
+        <p className="text-xs text-muted-foreground truncate">{user.role}</p>
+      </div>
+    </div>
+  );
 }

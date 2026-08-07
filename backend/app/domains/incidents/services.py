@@ -1,7 +1,7 @@
 import uuid
 import logging
 from typing import List, Dict, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from .schemas import Incident, IncidentStatus, IncidentSeverity, TimelineEvent, Playbook
 from .repository import IncidentRepository
 from app.core.events.bus import event_bus, Event, EventType
@@ -43,15 +43,15 @@ class IncidentManager:
         model = await self.repository.get_by_id(incident_id)
         if model:
             model.status = status
-            model.updated_at = datetime.utcnow()
+            model.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
             if status == IncidentStatus.CLOSED:
-                model.closed_at = datetime.utcnow()
+                model.closed_at = datetime.now(timezone.utc).replace(tzinfo=None)
             
             # Add timeline event
             model.timeline.append(TimelineEventModel(
                 id=str(uuid.uuid4()),
                 incident_id=incident_id,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(timezone.utc).replace(tzinfo=None),
                 source="System",
                 description=f"Status updated to {status.value}"
             ))

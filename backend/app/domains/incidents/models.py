@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, DateTime, Enum as SQLEnum, ForeignKey
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from app.core.database import Base
 from .schemas import IncidentStatus, IncidentSeverity
 
@@ -15,8 +15,8 @@ class IncidentModel(Base):
     severity = Column(SQLEnum(IncidentSeverity, name="incident_severity_enum"), nullable=False)
     status = Column(SQLEnum(IncidentStatus, name="incident_status_enum"), default=IncidentStatus.OPEN)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     closed_at = Column(DateTime, nullable=True)
     
     assigned_analyst = Column(String, nullable=True)
@@ -34,7 +34,7 @@ class TimelineEventModel(Base):
     
     id = Column(String, primary_key=True, index=True)
     incident_id = Column(String, ForeignKey("incidents.id", ondelete="CASCADE"), nullable=False)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     source = Column(String)
     description = Column(String)
     raw_data = Column(JSONB, nullable=True)
@@ -49,6 +49,6 @@ class EvidenceModel(Base):
     name = Column(String, nullable=False)
     type = Column(String, nullable=False)
     url = Column(String, nullable=True)
-    uploaded_at = Column(DateTime, default=datetime.utcnow)
+    uploaded_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     
     incident = relationship("IncidentModel", back_populates="evidence")

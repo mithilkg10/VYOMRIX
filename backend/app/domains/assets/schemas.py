@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 class AssetType(str, Enum):
@@ -44,5 +44,5 @@ class Asset(BaseModel):
     protected_by_waf: bool = False
     is_internet_facing: bool = False
     
-    last_seen: datetime = Field(default_factory=datetime.utcnow)
+    last_seen: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     health_status: HealthStatus = HealthStatus.HEALTHY

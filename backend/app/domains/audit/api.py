@@ -10,10 +10,12 @@ from .services import audit_service
 
 router = APIRouter(prefix="/audit", tags=["Audit Logging"])
 
+from app.domains.auth.permissions import PermissionsEnum
+
 @router.get("/", response_model=List[AuditLogResponse])
 async def get_audit_logs(
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
-    current_user: UserModel = Depends(RequirePermissions(["audit:view"]))
+    current_user: UserModel = Depends(RequirePermissions([PermissionsEnum.AUDIT_READ]))
 ):
     return await audit_service.get_logs(db, limit=limit)
