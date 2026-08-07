@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, Boolean, DateTime, Integer
-from sqlalchemy.dialects.postgresql import ARRAY
+from app.core.database import VariantArray as ARRAY
 from datetime import datetime, timezone
 from app.core.database import Base
 

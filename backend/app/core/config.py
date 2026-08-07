@@ -7,10 +7,18 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     ENVIRONMENT: str = "development"
     
+    # Runtime Configuration
+    VYOMRIX_RUNTIME: str = "production"  # 'production' or 'local'
+    VYOMRIX_SANDBOX: bool = False
+    
+    # Development Admin (Local Only)
+    VYOMRIX_DEV_ADMIN_EMAIL: Optional[str] = None
+    VYOMRIX_DEV_ADMIN_PASSWORD: Optional[str] = None
+    
     # Security
     SECRET_KEY: str = "development-only-secret-change-before-production"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     
     # Postgres
     POSTGRES_USER: str = "vyomrix"
@@ -52,9 +60,10 @@ class Settings(BaseSettings):
     @property
     def cors_origins(self) -> list[str]:
         return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",") if origin.strip()]
-
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
+        if self.VYOMRIX_RUNTIME == "local":
+            return "sqlite+aiosqlite:///./vyomrix-local.db"
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         
     @property

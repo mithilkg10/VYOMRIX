@@ -10,6 +10,7 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+from app.core.database import VariantArray, VariantJSON
 
 # revision identifiers, used by Alembic.
 revision: str = '198f17676aa3'
@@ -30,7 +31,7 @@ def upgrade() -> None:
     sa.Column('environment', sa.Enum('PRODUCTION', 'STAGING', 'DEVELOPMENT', name='environment_enum'), nullable=False),
     sa.Column('criticality', sa.Enum('LOW', 'MEDIUM', 'HIGH', 'CRITICAL', name='criticality_enum'), nullable=False),
     sa.Column('owner', sa.String(), nullable=True),
-    sa.Column('tags', postgresql.ARRAY(sa.String()), nullable=True),
+    sa.Column('tags', VariantArray(sa.String()), nullable=True),
     sa.Column('has_wazuh_agent', sa.Boolean(), nullable=True),
     sa.Column('protected_by_waf', sa.Boolean(), nullable=True),
     sa.Column('is_internet_facing', sa.Boolean(), nullable=True),
@@ -65,8 +66,8 @@ def upgrade() -> None:
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.Column('closed_at', sa.DateTime(), nullable=True),
     sa.Column('assigned_analyst', sa.String(), nullable=True),
-    sa.Column('related_assets', postgresql.ARRAY(sa.String()), nullable=True),
-    sa.Column('related_mitre_tactics', postgresql.ARRAY(sa.String()), nullable=True),
+    sa.Column('related_assets', VariantArray(sa.String()), nullable=True),
+    sa.Column('related_mitre_tactics', VariantArray(sa.String()), nullable=True),
     sa.Column('playbook_id', sa.String(), nullable=True),
     sa.Column('ai_summary', sa.String(), nullable=True),
     sa.PrimaryKeyConstraint('id')
@@ -76,12 +77,12 @@ def upgrade() -> None:
     sa.Column('id', sa.String(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('description', sa.String(), nullable=True),
-    sa.Column('tactics', postgresql.ARRAY(sa.String()), nullable=True),
-    sa.Column('data_sources', postgresql.ARRAY(sa.String()), nullable=True),
-    sa.Column('mitigations', postgresql.ARRAY(sa.String()), nullable=True),
+    sa.Column('tactics', VariantArray(sa.String()), nullable=True),
+    sa.Column('data_sources', VariantArray(sa.String()), nullable=True),
+    sa.Column('mitigations', VariantArray(sa.String()), nullable=True),
     sa.Column('coverage', sa.Enum('NONE', 'LOW', 'MEDIUM', 'HIGH', name='coverage_level_enum'), nullable=True),
-    sa.Column('linked_sigma_rules', postgresql.ARRAY(sa.String()), nullable=True),
-    sa.Column('linked_wazuh_rules', postgresql.ARRAY(sa.String()), nullable=True),
+    sa.Column('linked_sigma_rules', VariantArray(sa.String()), nullable=True),
+    sa.Column('linked_wazuh_rules', VariantArray(sa.String()), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_mitre_techniques_id'), 'mitre_techniques', ['id'], unique=False)
@@ -89,12 +90,12 @@ def upgrade() -> None:
     sa.Column('id', sa.String(), nullable=False),
     sa.Column('title', sa.String(), nullable=False),
     sa.Column('description', sa.String(), nullable=True),
-    sa.Column('logsource', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-    sa.Column('detection_logic', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-    sa.Column('falsepositives', postgresql.ARRAY(sa.String()), nullable=True),
+    sa.Column('logsource', VariantJSON(), nullable=True),
+    sa.Column('detection_logic', VariantJSON(), nullable=True),
+    sa.Column('falsepositives', VariantArray(sa.String()), nullable=True),
     sa.Column('level', sa.Enum('LOW', 'MEDIUM', 'HIGH', 'CRITICAL', name='rule_severity_enum'), nullable=False),
     sa.Column('status', sa.Enum('ACTIVE', 'TESTING', 'DEPRECATED', name='rule_status_enum'), nullable=True),
-    sa.Column('tags', postgresql.ARRAY(sa.String()), nullable=True),
+    sa.Column('tags', VariantArray(sa.String()), nullable=True),
     sa.Column('author', sa.String(), nullable=True),
     sa.Column('date', sa.DateTime(), nullable=True),
     sa.Column('raw_yaml', sa.Text(), nullable=False),
@@ -108,7 +109,7 @@ def upgrade() -> None:
     sa.Column('full_name', sa.String(), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=True),
     sa.Column('role', sa.String(), nullable=False),
-    sa.Column('permissions', postgresql.ARRAY(sa.String()), nullable=True),
+    sa.Column('permissions', VariantArray(sa.String()), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('last_login', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
@@ -132,7 +133,7 @@ def upgrade() -> None:
     sa.Column('timestamp', sa.DateTime(), nullable=True),
     sa.Column('source', sa.String(), nullable=True),
     sa.Column('description', sa.String(), nullable=True),
-    sa.Column('raw_data', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.Column('raw_data', VariantJSON(), nullable=True),
     sa.ForeignKeyConstraint(['incident_id'], ['incidents.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )

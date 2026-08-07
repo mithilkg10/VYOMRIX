@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, Boolean, Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import ARRAY
+from app.core.database import VariantArray as ARRAY
 from app.core.database import Base
 from .schemas import AssetType, Environment, Criticality
 

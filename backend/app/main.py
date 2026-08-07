@@ -20,12 +20,23 @@ from app.core.middleware import AuditMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 from fastapi import Depends
 
+from contextlib import asynccontextmanager
+from app.core.security_store import init_security_store
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    await init_security_store()
+    yield
+    # Shutdown
+
 def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.PROJECT_NAME,
         openapi_url=f"{settings.API_V1_STR}/openapi.json",
         description="Enterprise Cybersecurity Platform API",
-        version="1.0.0"
+        version="1.0.0",
+        lifespan=lifespan
     )
 
     # Security Middleware (CORS)

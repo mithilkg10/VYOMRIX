@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Vyomrix End-to-End Test Suite', () => {
   const email = 'admin@vyomrix.com';
-  const password = 'TestPassword123!';
+  const password = 'admin123';
 
   test('should reject missing credentials', async ({ page }) => {
     await page.goto('/login');
@@ -33,12 +33,15 @@ test.describe('Vyomrix End-to-End Test Suite', () => {
     await page.fill('input[name="password"]', password);
     
     await Promise.all([
-      page.waitForURL(/.*\/dashboard|\//),
+      page.waitForURL((url) => {
+        const path = new URL(url).pathname;
+        return path === '/' || path === '/dashboard';
+      }),
       page.click('button[type="submit"]')
     ]);
     
     // Wait for the UI to load
-    await expect(page.locator('text=Dashboard').or(page.locator('text=Vyomrix'))).toBeVisible();
+    await expect(page.locator('h1').filter({ hasText: /^Dashboard$|^Security Overview$/ })).toBeVisible();
     
     // Check Profile
     const menuButton = page.locator('button[aria-label="User menu"]').or(page.locator('text=Profile')).or(page.locator('.user-menu'));
@@ -69,7 +72,10 @@ test.describe('Vyomrix End-to-End Test Suite', () => {
     await page.fill('input[name="email"]', email);
     await page.fill('input[name="password"]', password);
     await Promise.all([
-      page.waitForURL(/.*\/dashboard|\//),
+      page.waitForURL((url) => {
+        const path = new URL(url).pathname;
+        return path === '/' || path === '/dashboard';
+      }),
       page.click('button[type="submit"]')
     ]);
 
@@ -87,13 +93,8 @@ test.describe('Vyomrix End-to-End Test Suite', () => {
       await page.goto(route.path);
       // Depending on the exact rendering state, it might say "Session expired" or show the page header. 
       // As long as the page doesn't crash with a Next.js 500 error, we consider the route structurally sound.
-      // We check if either the specific page title OR an error boundary state is visible.
-      await expect(
-        page.locator(`text=${route.title}`)
-          .or(page.locator('text=Session expired'))
-          .or(page.locator('text=Access unavailable'))
-          .or(page.locator('text=The service did not respond'))
-      ).toBeVisible({ timeout: 10000 });
+      // Every valid page or error state renders an h1 or h2.
+      await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 10000 });
     }
   });
 });

@@ -93,13 +93,13 @@ async def refresh_access_token(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token revoked or replay detected")
 
     # If it's a grace rotation, check Redis for the exact cached token
-    from app.core.redis import get_redis
+    from app.core.security_store import get_security_store
     import json
     
-    redis_client = await get_redis()
+    store = await get_security_store()
     
-    if session_data.get("is_grace") and redis_client:
-        cached = await redis_client.get(f"grace_token:{jti}")
+    if session_data.get("is_grace") and store:
+        cached = await store.get(f"grace_token:{jti}")
         if cached:
             return json.loads(cached)
 
@@ -122,8 +122,8 @@ async def refresh_access_token(
     }
     
     # If not a grace rotation, cache the exact response for 5 seconds
-    if not session_data.get("is_grace") and redis_client:
-        await redis_client.setex(f"grace_token:{jti}", 5, json.dumps(response_data))
+    if not session_data.get("is_grace") and store:
+        await store.setex(f"grace_token:{jti}", 5, json.dumps(response_data))
         
     return response_data
 

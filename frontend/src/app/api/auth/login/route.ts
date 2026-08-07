@@ -8,14 +8,18 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     
-    const backendResponse = await fetch(`${getBackendApiUrl()}/api/v1/auth/login`, {
-      method: "POST",
-      body: formData,
-      headers: {
-        Accept: "application/json",
-      },
-      cache: "no-store",
-    });
+    let backendResponse;
+    try {
+      backendResponse = await fetch(`${getBackendApiUrl()}/api/v1/auth/login`, {
+        method: "POST",
+        body: formData,
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      });
+    } catch (e) {
+      console.error("Backend fetch error:", e);
+      return NextResponse.json({ detail: "Service unavailable. Could not connect to backend." }, { status: 503 });
+    }
 
     const data = await backendResponse.json();
 

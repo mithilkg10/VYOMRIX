@@ -11,8 +11,10 @@ export async function loginAction(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
+  let res;
+  let data;
   try {
-    const res = await fetch(getBackendApiUrl() + "/api/v1/auth/login", {
+    res = await fetch(getBackendApiUrl() + "/api/v1/auth/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -30,7 +32,11 @@ export async function loginAction(formData: FormData) {
       return { error: errorData?.detail || "Invalid credentials" };
     }
 
-    const data = await res.json();
+    data = await res.json();
+  } catch (e) {
+    console.error("Backend fetch error:", e);
+    return { error: "Service unavailable. Could not connect to backend." };
+  }
     
     // Set cookie
     const cookieStore = await cookies();
@@ -51,10 +57,6 @@ export async function loginAction(formData: FormData) {
             path: "/",
         });
     }
-
-  } catch {
-    return { error: "Failed to connect to authentication server." };
-  }
 
   redirect("/");
 }

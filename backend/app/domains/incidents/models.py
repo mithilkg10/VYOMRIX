@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, DateTime, Enum as SQLEnum, ForeignKey
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from app.core.database import VariantArray as ARRAY, VariantJSON as JSONB
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 from app.core.database import Base

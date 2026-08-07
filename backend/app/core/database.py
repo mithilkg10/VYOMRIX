@@ -2,13 +2,23 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.orm import declarative_base
 from app.core.config import settings
 
-# Create async engine for PostgreSQL
-# Example settings.DATABASE_URL: postgresql+asyncpg://user:password@localhost:5432/vyomrix
+from sqlalchemy import event
+
+# Create async engine
 engine = create_async_engine(
     settings.SQLALCHEMY_DATABASE_URI,
     echo=False,  # Set to True for debugging SQL queries
     future=True
 )
+
+@event.listens_for(engine.sync_engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    if settings.VYOMRIX_RUNTIME == "local":
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.close()
 
 # Create session maker
 AsyncSessionLocal = async_sessionmaker(
@@ -18,6 +28,31 @@ AsyncSessionLocal = async_sessionmaker(
     autocommit=False,
     autoflush=False
 )
+
+from sqlalchemy.types import TypeDecorator, String, JSON
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+
+class VariantArray(TypeDecorator):
+    """Use PostgreSQL ARRAY when connected to Postgres, else use JSON for SQLite."""
+    impl = JSON
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "postgresql":
+            return dialect.type_descriptor(ARRAY(String))
+        else:
+            return dialect.type_descriptor(JSON)
+
+class VariantJSON(TypeDecorator):
+    """Use PostgreSQL JSONB when connected to Postgres, else use JSON for SQLite."""
+    impl = JSON
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "postgresql":
+            return dialect.type_descriptor(JSONB)
+        else:
+            return dialect.type_descriptor(JSON)
 
 # Base class for SQLAlchemy models
 Base = declarative_base()
