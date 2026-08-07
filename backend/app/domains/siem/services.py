@@ -11,6 +11,7 @@ from .schemas import AgentInfo, AlertSource, MITREInfo, NormalizedAlert
 
 logger = logging.getLogger(__name__)
 
+_shared_wazuh_client = None
 
 class WazuhIntegrationUnavailable(Exception):
     """The configured Wazuh integration cannot currently provide data."""
@@ -29,7 +30,23 @@ class WazuhClient:
         self.indexer_user = settings.WAZUH_INDEXER_USER
         self.indexer_password = settings.WAZUH_INDEXER_PASSWORD
         self.token: Optional[str] = None
-        self.client = httpx.AsyncClient(verify=settings.WAZUH_VERIFY_TLS, timeout=httpx.Timeout(10.0))
+        
+        # Determine TLS verification strategy
+        verify_param = settings.WAZUH_VERIFY_TLS
+        if verify_param and settings.WAZUH_CA_BUNDLE:
+            import os
+            if os.path.exists(settings.WAZUH_CA_BUNDLE):
+                verify_param = settings.WAZUH_CA_BUNDLE
+            else:
+                logger.warning(f"WAZUH_CA_BUNDLE path not found: {settings.WAZUH_CA_BUNDLE}, falling back to default TLS verification.")
+
+        # Re-use the class-level or module-level client if we wanted strict sharing, 
+        # but to ensure we don't break connection pooling across the async loop boundary, 
+        # a shared client in a global variable is standard.
+        global _shared_wazuh_client
+        if _shared_wazuh_client is None:
+            _shared_wazuh_client = httpx.AsyncClient(verify=verify_param, timeout=httpx.Timeout(10.0))
+        self.client = _shared_wazuh_client
 
     def _require_manager_configuration(self) -> None:
         if not self.manager_url or not self.manager_user or not self.manager_password:

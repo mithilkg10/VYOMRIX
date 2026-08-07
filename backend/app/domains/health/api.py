@@ -21,10 +21,24 @@ async def liveness_probe():
 
 @router.get("/ready")
 async def readiness_probe(db: AsyncSession = Depends(get_db)):
-    """Kubernetes readiness probe - checks database connectivity."""
+    """Kubernetes readiness probe - checks database and security store connectivity."""
+    status_details = {"database": "connected", "security_store": "connected"}
+    
+    # 1. Check DB
     try:
         await db.execute(text("SELECT 1"))
-        return {"status": "ready", "database": "connected"}
-    except Exception:
+    except Exception as e:
+        status_details["database"] = "unavailable"
+        
+    # 2. Check Security Store (Redis)
+    from app.core.security_store import get_security_store
+    store = await get_security_store()
+    if store and hasattr(store, 'ping'):
+        if not await store.ping():
+            status_details["security_store"] = "unavailable"
+            
+    if "unavailable" in status_details.values():
         from fastapi import HTTPException
-        raise HTTPException(status_code=503, detail={"status": "degraded", "database": "unavailable", "message": "Database readiness check failed."})
+        raise HTTPException(status_code=503, detail={"status": "degraded", **status_details})
+        
+    return {"status": "ready", **status_details}

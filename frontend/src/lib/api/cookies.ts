@@ -1,10 +1,35 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
-const ACCESS_TOKEN_COOKIE = "access_token";
-const REFRESH_TOKEN_COOKIE = "refresh_token";
-const CSRF_TOKEN_COOKIE = "csrf_token";
+export const ACCESS_TOKEN_COOKIE = "access_token";
+export const REFRESH_TOKEN_COOKIE = "refresh_token";
+export const CSRF_TOKEN_COOKIE = "csrf_token";
 
 const isProduction = process.env.NODE_ENV === "production";
+
+export const getAccessTokenCookieOptions = () => ({
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: "lax" as const,
+  path: "/", // Path must be / so it is sent on Server Actions/BFF calls from any page
+  maxAge: 15 * 60, // 15 minutes
+});
+
+export const getRefreshTokenCookieOptions = () => ({
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: "lax" as const,
+  path: "/", // Kept at / to allow BFF rotation across paths
+  maxAge: 7 * 24 * 60 * 60, // 7 days
+});
+
+export const getCsrfTokenCookieOptions = () => ({
+  httpOnly: false,
+  secure: isProduction,
+  sameSite: "lax" as const,
+  path: "/",
+  maxAge: 7 * 24 * 60 * 60,
+});
 
 export function setAuthCookies(
   response: NextResponse,
@@ -12,35 +37,14 @@ export function setAuthCookies(
   refreshToken?: string,
   csrfToken?: string
 ) {
-  // Access Token: 15 minutes
-  response.cookies.set(ACCESS_TOKEN_COOKIE, accessToken, {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: "lax",
-    path: "/api",
-    maxAge: 15 * 60, 
-  });
+  response.cookies.set(ACCESS_TOKEN_COOKIE, accessToken, getAccessTokenCookieOptions());
 
-  // Refresh Token: 7 days
   if (refreshToken) {
-    response.cookies.set(REFRESH_TOKEN_COOKIE, refreshToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: "lax",
-      path: "/api/auth", // Restrictive path consistent with BFF design
-      maxAge: 7 * 24 * 60 * 60,
-    });
+    response.cookies.set(REFRESH_TOKEN_COOKIE, refreshToken, getRefreshTokenCookieOptions());
   }
 
-  // CSRF Token (Not HttpOnly, readable by frontend to send in header)
   if (csrfToken) {
-    response.cookies.set(CSRF_TOKEN_COOKIE, csrfToken, {
-      httpOnly: false,
-      secure: isProduction,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 7 * 24 * 60 * 60,
-    });
+    response.cookies.set(CSRF_TOKEN_COOKIE, csrfToken, getCsrfTokenCookieOptions());
   }
 }
 
@@ -49,3 +53,11 @@ export function clearAuthCookies(response: NextResponse) {
   response.cookies.delete(REFRESH_TOKEN_COOKIE);
   response.cookies.delete(CSRF_TOKEN_COOKIE);
 }
+
+export async function clearAuthCookiesAction() {
+  const cookieStore = await cookies();
+  cookieStore.delete(ACCESS_TOKEN_COOKIE);
+  cookieStore.delete(REFRESH_TOKEN_COOKIE);
+  cookieStore.delete(CSRF_TOKEN_COOKIE);
+}
+

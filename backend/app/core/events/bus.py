@@ -50,11 +50,28 @@ class EventBusMetrics:
             return 0.0
         return self.total_processing_time_ms / self.total_processed
 
-class EventBus:
+class BaseEventBus:
+    def subscribe(self, event_type: EventType, handler: EventHandler):
+        pass
+    def unsubscribe(self, event_type: EventType, handler: EventHandler):
+        pass
+    def subscribe_worker(self, event_type: EventType, handler: EventHandler):
+        pass
+    async def publish(self, event: Event):
+        pass
+    async def start(self, is_worker: bool = False):
+        pass
+    async def stop(self):
+        pass
+    def get_metrics(self) -> dict:
+        return {}
+
+class LocalEventBus(BaseEventBus):
     def __init__(self, dlq_store: DeadLetterStoreInterface = None):
         self._subscribers: Dict[EventType, List[EventHandler]] = {
             e: [] for e in EventType
         }
+        self._worker_handlers: Dict[EventType, EventHandler] = {}
         self._queue = asyncio.Queue(maxsize=5000)
         self._is_running = False
         self._worker_task = None
@@ -70,10 +87,12 @@ class EventBus:
         if handler in self._subscribers[event_type]:
             self._subscribers[event_type].remove(handler)
             logger.info(f"Unsubscribed handler {handler.__name__} from {event_type.value}")
+            
+    def subscribe_worker(self, event_type: EventType, handler: EventHandler):
+        self._worker_handlers[event_type] = handler
 
     async def publish(self, event: Event):
         logger.debug(f"Publishing event {event.event_type.value} from {event.source_module}")
-        # Blocks if queue is full (Backpressure)
         await self._queue.put(event)
 
     async def _execute_with_retry(self, handler: EventHandler, event: Event):
@@ -91,12 +110,18 @@ class EventBus:
                     self.metrics.failed_events += 1
                     await self.dlq_store.add(event, str(e))
                 else:
-                    await asyncio.sleep(0.5 * (2 ** (attempt - 1))) # Exponential backoff
+                    await asyncio.sleep(0.5 * (2 ** (attempt - 1))) 
 
     async def _worker(self):
         while self._is_running:
             try:
                 event = await self._queue.get()
+                # Run worker handlers first
+                worker_handler = self._worker_handlers.get(event.event_type)
+                if worker_handler:
+                    await self._execute_with_retry(worker_handler, event)
+                    
+                # Run live subscribers
                 handlers = self._subscribers.get(event.event_type, [])
                 
                 start_time = time.time()
@@ -115,11 +140,11 @@ class EventBus:
             except Exception as e:
                 logger.error(f"EventBus worker error: {e}")
 
-    def start(self):
+    async def start(self, is_worker: bool = False):
         if not self._is_running:
             self._is_running = True
             self._worker_task = asyncio.create_task(self._worker())
-            logger.info("EventBus started")
+            logger.info("LocalEventBus started")
 
     async def stop(self):
         self._is_running = False
@@ -129,7 +154,7 @@ class EventBus:
                 await self._worker_task
             except asyncio.CancelledError:
                 pass
-        logger.info("EventBus stopped")
+        logger.info("LocalEventBus stopped")
 
     def get_metrics(self) -> dict:
         return {
@@ -141,4 +166,35 @@ class EventBus:
             "event_throughput": self.metrics.total_processed
         }
 
-event_bus = EventBus()
+class EventBusProxy:
+    def __init__(self):
+        self._bus: Optional[BaseEventBus] = None
+
+    def initialize(self, runtime_mode: str):
+        if runtime_mode == "local":
+            self._bus = LocalEventBus()
+            logger.info("Initialized LocalEventBus")
+        else:
+            from app.core.events.rabbitmq_bus import RabbitMQEventBus
+            self._bus = RabbitMQEventBus()
+            logger.info("Initialized RabbitMQEventBus")
+
+    def subscribe(self, event_type: EventType, handler: EventHandler):
+        if self._bus: self._bus.subscribe(event_type, handler)
+
+    def unsubscribe(self, event_type: EventType, handler: EventHandler):
+        if self._bus: self._bus.unsubscribe(event_type, handler)
+        
+    def subscribe_worker(self, event_type: EventType, handler: EventHandler):
+        if self._bus: self._bus.subscribe_worker(event_type, handler)
+
+    async def publish(self, event: Event):
+        if self._bus: await self._bus.publish(event)
+
+    async def start(self, is_worker: bool = False):
+        if self._bus: await self._bus.start(is_worker)
+
+    async def stop(self):
+        if self._bus: await self._bus.stop()
+
+event_bus = EventBusProxy()

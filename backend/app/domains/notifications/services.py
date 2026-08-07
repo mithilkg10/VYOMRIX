@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 class NotificationService:
     def __init__(self):
-        # We subscribe to incident creation to notify slack/teams
-        event_bus.subscribe(EventType.INCIDENT_CREATED, self.handle_incident_created)
+        # We subscribe to incident creation to notify slack/teams (runs in worker)
+        event_bus.subscribe_worker(EventType.INCIDENT_CREATED, self.handle_incident_created)
 
     async def handle_incident_created(self, event: Event):
         """Handle new incident event and send notification."""

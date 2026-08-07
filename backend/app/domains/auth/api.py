@@ -62,14 +62,19 @@ async def login_for_access_token(
         "session_id": session_data["session_id"]
     }
 
+from pydantic import BaseModel
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
 @router.post("/refresh", dependencies=[Depends(RateLimiter(times=10, seconds=60))])
 async def refresh_access_token(
     request: Request,
-    refresh_token: str,
+    body: RefreshTokenRequest,
     db: AsyncSession = Depends(get_db)
 ):
     try:
-        payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(body.refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         email: str = payload.get("sub")
         token_type: str = payload.get("type")
         jti: str = payload.get("jti")

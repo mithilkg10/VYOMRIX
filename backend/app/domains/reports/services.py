@@ -10,11 +10,44 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from app.domains.incidents.models import IncidentModel
 from sqlalchemy.future import select
+from app.core.config import settings
 
-class ReportService:
+class ReportStorageInterface:
+    def save(self, filename: str, content: bytes) -> str:
+        pass
+
+class LocalFileSystemStorage(ReportStorageInterface):
     def __init__(self):
         self.reports_dir = os.path.join(tempfile.gettempdir(), "vyomrix_reports")
         os.makedirs(self.reports_dir, exist_ok=True)
+        
+    def save(self, filename: str, content: bytes) -> str:
+        file_path = os.path.join(self.reports_dir, filename)
+        with open(file_path, "wb") as f:
+            f.write(content)
+        return file_path
+
+class ProductionSharedStorage(ReportStorageInterface):
+    # In production, we assume a persistent shared volume mounted at /app/data/reports
+    # This could easily be swapped out for S3 using boto3
+    def __init__(self):
+        self.reports_dir = "/app/data/reports"
+        os.makedirs(self.reports_dir, exist_ok=True)
+        
+    def save(self, filename: str, content: bytes) -> str:
+        file_path = os.path.join(self.reports_dir, filename)
+        with open(file_path, "wb") as f:
+            f.write(content)
+        return file_path
+
+def get_report_storage() -> ReportStorageInterface:
+    if settings.VYOMRIX_RUNTIME == "local":
+        return LocalFileSystemStorage()
+    return ProductionSharedStorage()
+
+class ReportService:
+    def __init__(self):
+        self.storage = get_report_storage()
         # Use a string template for jinja to keep it simple, normally you'd use a file
         self.jinja_env = Environment(autoescape=select_autoescape())
 
@@ -75,10 +108,7 @@ class ReportService:
         )
         
         file_id = f"report_{incident_id}_{uuid.uuid4().hex[:6]}.html"
-        file_path = os.path.join(self.reports_dir, file_id)
-        
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(html_content)
+        file_path = self.storage.save(file_id, html_content.encode('utf-8'))
             
         return file_path
 
@@ -86,9 +116,12 @@ class ReportService:
         incident = await self._get_incident_data(db, incident_id)
         
         file_id = f"report_{incident_id}_{uuid.uuid4().hex[:6]}.pdf"
-        file_path = os.path.join(self.reports_dir, file_id)
         
-        doc = SimpleDocTemplate(file_path, pagesize=letter)
+        # We need to generate the PDF in memory first to use the storage interface
+        from io import BytesIO
+        buffer = BytesIO()
+        
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
         styles = getSampleStyleSheet()
         story = []
         
@@ -114,7 +147,11 @@ class ReportService:
         story.append(Paragraph("No direct mappings available in this summary.", styles['Normal']))
         story.append(Spacer(1, 12))
 
+        # Build PDF
         doc.build(story)
+        
+        pdf_bytes = buffer.getvalue()
+        file_path = self.storage.save(file_id, pdf_bytes)
         
         return file_path
 

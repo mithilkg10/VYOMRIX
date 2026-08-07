@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 import time
 from typing import Optional, Any
 
@@ -50,38 +50,55 @@ class MemorySecurityStateStore(SecurityStateStore):
 import redis.asyncio as redis
 import logging
 from app.core.config import settings
+from fastapi import HTTPException, status
 
 logger = logging.getLogger(__name__)
 
 class RedisSecurityStateStore(SecurityStateStore):
     def __init__(self):
-        self.redis_url = f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/0"
-        self._client = None
+        auth = f":{settings.REDIS_PASSWORD}@" if settings.REDIS_PASSWORD else ""
+        self.redis_url = f"redis://{auth}{settings.REDIS_HOST}:{settings.REDIS_PORT}/0"
+        self._pool = redis.ConnectionPool.from_url(self.redis_url, decode_responses=True)
+        self._client = redis.Redis(connection_pool=self._pool)
 
-    async def connect(self):
-        try:
-            self._client = redis.from_url(self.redis_url, decode_responses=True)
-            await self._client.ping()
-            logger.info("Connected to Redis successfully.")
-        except Exception as e:
-            logger.error(f"Failed to connect to Redis: {e}")
-            self._client = None
+    def _ensure_connected(self):
+        # We rely on redis-py's connection pooling and auto-reconnect,
+        # but we must fail closed if an operation fails.
+        pass
 
     async def get(self, key: str) -> Optional[Any]:
-        if not self._client: return None
-        return await self._client.get(key)
+        try:
+            return await self._client.get(key)
+        except Exception as e:
+            logger.error(f"Redis get failed: {e}")
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Security state store unavailable")
 
     async def setex(self, key: str, seconds: int, value: Any) -> None:
-        if not self._client: return
-        await self._client.setex(key, seconds, value)
+        try:
+            await self._client.setex(key, seconds, value)
+        except Exception as e:
+            logger.error(f"Redis setex failed: {e}")
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Security state store unavailable")
 
     async def incr(self, key: str) -> int:
-        if not self._client: return 1
-        return await self._client.incr(key)
+        try:
+            return await self._client.incr(key)
+        except Exception as e:
+            logger.error(f"Redis incr failed: {e}")
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Security state store unavailable")
 
     async def expire(self, key: str, seconds: int) -> None:
-        if not self._client: return
-        await self._client.expire(key, seconds)
+        try:
+            await self._client.expire(key, seconds)
+        except Exception as e:
+            logger.error(f"Redis expire failed: {e}")
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Security state store unavailable")
+            
+    async def ping(self) -> bool:
+        try:
+            return await self._client.ping()
+        except Exception:
+            return False
 
 _store_instance = None
 
@@ -92,7 +109,7 @@ async def init_security_store():
         logger.info("Initialized MemorySecurityStateStore for Local Native Mode.")
     else:
         _store_instance = RedisSecurityStateStore()
-        await _store_instance.connect()
+        logger.info("Initialized RedisSecurityStateStore.")
 
 async def get_security_store() -> SecurityStateStore:
     return _store_instance

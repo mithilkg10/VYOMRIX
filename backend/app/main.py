@@ -22,13 +22,20 @@ from fastapi import Depends
 
 from contextlib import asynccontextmanager
 from app.core.security_store import init_security_store
+from app.core.events.bus import event_bus
+from app.core.logging_config import setup_logging
+
+setup_logging()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
     await init_security_store()
+    event_bus.initialize(settings.VYOMRIX_RUNTIME)
+    await event_bus.start(is_worker=False)
     yield
     # Shutdown
+    await event_bus.stop()
 
 def create_app() -> FastAPI:
     app = FastAPI(

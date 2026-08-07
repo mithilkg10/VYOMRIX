@@ -3,9 +3,13 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getBackendApiUrl } from "@/lib/api/config";
-
-const ACCESS_TOKEN_COOKIE = "access_token";
-const REFRESH_TOKEN_COOKIE = "refresh_token";
+import {
+  ACCESS_TOKEN_COOKIE,
+  REFRESH_TOKEN_COOKIE,
+  getAccessTokenCookieOptions,
+  getRefreshTokenCookieOptions,
+  clearAuthCookiesAction
+} from "@/lib/api/cookies";
 
 export async function loginAction(formData: FormData) {
   const email = formData.get("email") as string;
@@ -38,32 +42,19 @@ export async function loginAction(formData: FormData) {
     return { error: "Service unavailable. Could not connect to backend." };
   }
     
-    // Set cookie
-    const cookieStore = await cookies();
-    cookieStore.set(ACCESS_TOKEN_COOKIE, data.access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 1 week
-      path: "/",
-    });
+  // Set cookie
+  const cookieStore = await cookies();
+  cookieStore.set(ACCESS_TOKEN_COOKIE, data.access_token, getAccessTokenCookieOptions());
 
-    if (data.refresh_token) {
-        cookieStore.set(REFRESH_TOKEN_COOKIE, data.refresh_token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-            maxAge: 60 * 60 * 24 * 30, // 30 days
-            path: "/",
-        });
-    }
+  if (data.refresh_token) {
+    cookieStore.set(REFRESH_TOKEN_COOKIE, data.refresh_token, getRefreshTokenCookieOptions());
+  }
 
   redirect("/");
 }
 
 export async function logoutAction() {
-    const cookieStore = await cookies();
-    cookieStore.delete(ACCESS_TOKEN_COOKIE);
-    cookieStore.delete(REFRESH_TOKEN_COOKIE);
+    await clearAuthCookiesAction();
     redirect("/login");
 }
+

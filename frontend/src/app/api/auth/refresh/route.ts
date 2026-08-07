@@ -19,12 +19,14 @@ export async function POST(request: NextRequest) {
     }
 
     const backendResponse = await fetch(
-      `${getBackendApiUrl()}/api/v1/auth/refresh?refresh_token=${encodeURIComponent(refreshToken)}`,
+      `${getBackendApiUrl()}/api/v1/auth/refresh`,
       {
         method: "POST",
         headers: {
+          "Content-Type": "application/json",
           Accept: "application/json",
         },
+        body: JSON.stringify({ refresh_token: refreshToken }),
         cache: "no-store",
       }
     );
