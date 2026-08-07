@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     WAZUH_INDEXER_URL: Optional[str] = None
     WAZUH_INDEXER_USER: Optional[str] = None
     WAZUH_INDEXER_PASSWORD: Optional[str] = None
+    WAZUH_VERIFY_TLS: bool = True
     ALLOWED_ORIGINS: str = "http://localhost:3000"
 
     @model_validator(mode="after")

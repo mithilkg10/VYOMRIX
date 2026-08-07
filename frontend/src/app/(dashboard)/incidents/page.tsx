@@ -23,21 +23,25 @@ const severityStatus = (value: Incident["severity"]) =>
 const formatTimestamp = (value: string) => new Date(value).toLocaleString();
 
 export default function IncidentsPage() {
-  const { incidents, status, refresh } = useIncidents();
   const [query, setQuery] = useState("");
-  const [severity, setSeverity] = useState<IncidentSeverity | "All">("All");
-  const [incidentStatus, setIncidentStatus] = useState<IncidentStatus | "All">("All");
+  const [severity, setSeverity] = useState<IncidentSeverity | undefined>(undefined);
+  const [incidentStatus, setIncidentStatus] = useState<IncidentStatus | undefined>(undefined);
   const [sort, setSort] = useState<"updated_at" | "created_at" | "severity">("updated_at");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Incident | null>(null);
+
+  const pageSize = 10;
+  const skip = (page - 1) * pageSize;
+
+  const { data, status, refresh } = useIncidents(skip, pageSize, incidentStatus, severity);
+  const incidents = data?.items || [];
+  const total = data?.total || 0;
 
   const filtered = useMemo(
     () =>
       incidents
         .filter(
           (item) =>
-            (severity === "All" || item.severity === severity) &&
-            (incidentStatus === "All" || item.status === incidentStatus) &&
             [item.id, item.title, item.assigned_analyst ?? ""].join(" ").toLowerCase().includes(query.toLowerCase()),
         )
         .sort((a, b) =>
@@ -45,17 +49,17 @@ export default function IncidentsPage() {
             ? ["Low", "Medium", "High", "Critical"].indexOf(b.severity) - ["Low", "Medium", "High", "Critical"].indexOf(a.severity)
             : new Date(b[sort]).getTime() - new Date(a[sort]).getTime(),
         ),
-    [incidents, severity, incidentStatus, query, sort],
+    [incidents, query, sort],
   );
 
-  const pageSize = 10;
-  const pageCount = Math.ceil(filtered.length / pageSize);
+  const pageCount = Math.ceil(total / pageSize);
   const activePage = pageCount ? Math.min(page, pageCount) : 1;
-  const rows = filtered.slice((activePage - 1) * pageSize, activePage * pageSize);
+  const rows = filtered; // Sorting is client side on current page items
+
   const clear = () => {
     setQuery("");
-    setSeverity("All");
-    setIncidentStatus("All");
+    setSeverity(undefined);
+    setIncidentStatus(undefined);
     setPage(1);
   };
   const openIncident = (incident: Incident) => setSelected(incident);
@@ -85,10 +89,10 @@ export default function IncidentsPage() {
       <section className="panel p-4 sm:p-5">
         <div className="flex flex-wrap gap-2">
           <Input className="min-w-48 flex-1" value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="Search ID, title, or assigned analyst" aria-label="Search loaded incidents" />
-          <select className="h-10 rounded-md border bg-background px-3 text-sm" value={severity} onChange={(event) => { setSeverity(event.target.value as IncidentSeverity | "All"); setPage(1); }} aria-label="Filter severity">
+          <select className="h-10 rounded-md border bg-background px-3 text-sm" value={severity || "All"} onChange={(event) => { setSeverity(event.target.value === "All" ? undefined : event.target.value as IncidentSeverity); setPage(1); }} aria-label="Filter severity">
             <option>All</option>{INCIDENT_SEVERITIES.map((value) => <option key={value}>{value}</option>)}
           </select>
-          <select className="h-10 rounded-md border bg-background px-3 text-sm" value={incidentStatus} onChange={(event) => { setIncidentStatus(event.target.value as IncidentStatus | "All"); setPage(1); }} aria-label="Filter status">
+          <select className="h-10 rounded-md border bg-background px-3 text-sm" value={incidentStatus || "All"} onChange={(event) => { setIncidentStatus(event.target.value === "All" ? undefined : event.target.value as IncidentStatus); setPage(1); }} aria-label="Filter status">
             <option>All</option>{INCIDENT_STATUSES.map((value) => <option key={value}>{value}</option>)}
           </select>
           <Button variant="ghost" onClick={clear}>Clear</Button>
@@ -118,7 +122,7 @@ export default function IncidentsPage() {
             </table>
           </div>
         )}
-        {filtered.length > pageSize && <div className="mt-4 flex items-center justify-between"><span className="text-sm text-muted-foreground">Page {activePage} of {pageCount}</span><div className="flex gap-2"><Button size="sm" variant="outline" disabled={activePage === 1} onClick={() => setPage(activePage - 1)}>Previous</Button><Button size="sm" variant="outline" disabled={activePage >= pageCount} onClick={() => setPage(activePage + 1)}>Next</Button></div></div>}
+        {total > pageSize && <div className="mt-4 flex items-center justify-between"><span className="text-sm text-muted-foreground">Page {activePage} of {pageCount}</span><div className="flex gap-2"><Button size="sm" variant="outline" disabled={activePage === 1} onClick={() => setPage(activePage - 1)}>Previous</Button><Button size="sm" variant="outline" disabled={activePage >= pageCount} onClick={() => setPage(activePage + 1)}>Next</Button></div></div>}
       </section>
       <Dialog open={selected !== null} onOpenChange={(isOpen) => { if (!isOpen) setSelected(null); }}>
         <DialogContent className="right-0 left-auto top-0 h-dvh w-[min(100vw,32rem)] max-w-none translate-x-0 translate-y-0 overflow-y-auto rounded-none border-y-0 border-r-0 p-0 sm:w-[min(92vw,36rem)]">

@@ -66,6 +66,11 @@ class EventBus:
         self._subscribers[event_type].append(handler)
         logger.info(f"Subscribed handler {handler.__name__} to {event_type.value}")
 
+    def unsubscribe(self, event_type: EventType, handler: EventHandler):
+        if handler in self._subscribers[event_type]:
+            self._subscribers[event_type].remove(handler)
+            logger.info(f"Unsubscribed handler {handler.__name__} from {event_type.value}")
+
     async def publish(self, event: Event):
         logger.debug(f"Publishing event {event.event_type.value} from {event.source_module}")
         # Blocks if queue is full (Backpressure)

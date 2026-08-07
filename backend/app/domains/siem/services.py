@@ -29,7 +29,7 @@ class WazuhClient:
         self.indexer_user = settings.WAZUH_INDEXER_USER
         self.indexer_password = settings.WAZUH_INDEXER_PASSWORD
         self.token: Optional[str] = None
-        self.client = httpx.AsyncClient(verify=False, timeout=httpx.Timeout(10.0))
+        self.client = httpx.AsyncClient(verify=settings.WAZUH_VERIFY_TLS, timeout=httpx.Timeout(10.0))
 
     def _require_manager_configuration(self) -> None:
         if not self.manager_url or not self.manager_user or not self.manager_password:

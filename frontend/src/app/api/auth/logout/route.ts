@@ -23,10 +23,10 @@ export async function POST(request: NextRequest) {
 
     // Read session_id from URL query params
     const { searchParams } = new URL(request.url);
-    const sessionId = searchParams.get("session_id");
+    const targetSessionId = searchParams.get("session_id");
 
-    const targetUrl = sessionId 
-      ? `${getBackendApiUrl()}/api/v1/auth/logout?session_id=${encodeURIComponent(sessionId)}`
+    const targetUrl = targetSessionId 
+      ? `${getBackendApiUrl()}/api/v1/auth/logout?session_id=${encodeURIComponent(targetSessionId)}`
       : `${getBackendApiUrl()}/api/v1/auth/logout`;
 
     const backendResponse = await fetch(targetUrl, {

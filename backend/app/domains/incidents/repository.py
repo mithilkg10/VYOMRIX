@@ -8,14 +8,36 @@ class IncidentRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_all(self) -> List[IncidentModel]:
+    async def get_all(
+        self,
+        skip: int = 0,
+        limit: int = 50,
+        status: Optional[str] = None,
+        severity: Optional[str] = None,
+    ) -> List[IncidentModel]:
+        stmt = select(IncidentModel)
+        if status:
+            stmt = stmt.where(IncidentModel.status == status)
+        if severity:
+            stmt = stmt.where(IncidentModel.severity == severity)
+            
         result = await self.db.execute(
-            select(IncidentModel).options(
+            stmt.options(
                 selectinload(IncidentModel.timeline),
                 selectinload(IncidentModel.evidence)
-            ).order_by(IncidentModel.created_at.desc())
+            ).order_by(IncidentModel.created_at.desc()).offset(skip).limit(limit)
         )
         return list(result.scalars().all())
+        
+    async def count(self, status: Optional[str] = None, severity: Optional[str] = None) -> int:
+        from sqlalchemy import func
+        stmt = select(func.count(IncidentModel.id))
+        if status:
+            stmt = stmt.where(IncidentModel.status == status)
+        if severity:
+            stmt = stmt.where(IncidentModel.severity == severity)
+        result = await self.db.execute(stmt)
+        return result.scalar() or 0
 
     async def get_by_id(self, incident_id: str) -> Optional[IncidentModel]:
         result = await self.db.execute(

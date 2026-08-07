@@ -18,7 +18,7 @@ const source = <T>(result: PromiseSettledResult<T>): DashboardSource<T> =>
 
 export async function getDashboardData(signal?: AbortSignal): Promise<DashboardData> {
   const [incidents, assets, alerts, agents] = await Promise.allSettled([
-    getIncidents(signal),
+    getIncidents(0, 50, undefined, undefined, signal).then((response) => response.items),
     getAssets(signal),
     getAlerts().then((response) => response.items),
     getAgents().then((response) => response.items),

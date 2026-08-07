@@ -41,17 +41,22 @@ export interface Incident {
   ai_summary?: string | null;
 }
 
-export type IncidentListResponse = Incident[];
+export type PaginatedIncidentResponse = {
+  items: Incident[];
+  total: number;
+  skip: number;
+  limit: number;
+};
 
 export type IncidentsState =
-  | { status: "loading"; incidents: Incident[]; error: null }
-  | { status: "ready"; incidents: Incident[]; error: null }
-  | { status: "empty"; incidents: Incident[]; error: null }
-  | { status: "unauthorized"; incidents: Incident[]; error: ApiError }
-  | { status: "unavailable"; incidents: Incident[]; error: ApiError }
-  | { status: "error"; incidents: Incident[]; error: ApiError };
+  | { status: "loading"; data: PaginatedIncidentResponse | null; error: null }
+  | { status: "ready"; data: PaginatedIncidentResponse; error: null }
+  | { status: "empty"; data: PaginatedIncidentResponse; error: null }
+  | { status: "unauthorized"; data: PaginatedIncidentResponse | null; error: ApiError }
+  | { status: "unavailable"; data: PaginatedIncidentResponse | null; error: ApiError }
+  | { status: "error"; data: PaginatedIncidentResponse | null; error: ApiError };
 
-const initialState: IncidentsState = { status: "loading", incidents: [], error: null };
+const initialState: IncidentsState = { status: "loading", data: null, error: null };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -105,42 +110,82 @@ function parseIncident(value: unknown): Incident | null {
   };
 }
 
-function parseIncidentList(value: unknown): IncidentListResponse {
-  if (!Array.isArray(value)) throw new ApiError("The incident service returned an unexpected response.", 500);
-  const incidents = value.map(parseIncident);
-  if (incidents.some((incident) => incident === null)) throw new ApiError("The incident service returned an unexpected response.", 500);
-  return incidents as IncidentListResponse;
+function parseIncidentList(value: unknown): PaginatedIncidentResponse {
+  if (!isRecord(value) || !Array.isArray(value.items) || typeof value.total !== "number" || typeof value.skip !== "number" || typeof value.limit !== "number") {
+    throw new ApiError("The incident service returned an unexpected response format.", 500);
+  }
+  const items = value.items.map(parseIncident);
+  if (items.some((incident) => incident === null)) throw new ApiError("The incident service returned malformed incidents.", 500);
+  return { items: items as Incident[], total: value.total, skip: value.skip, limit: value.limit };
 }
 
-export async function getIncidents(signal?: AbortSignal): Promise<IncidentListResponse> {
+export async function getIncidents(skip = 0, limit = 50, incidentStatus?: IncidentStatus, severity?: IncidentSeverity, signal?: AbortSignal): Promise<PaginatedIncidentResponse> {
   try {
-    return parseIncidentList(await apiRequest<unknown>("incidents/", { signal }));
+    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() });
+    if (incidentStatus) params.append("status", incidentStatus);
+    if (severity) params.append("severity", severity);
+    return parseIncidentList(await apiRequest<unknown>(`incidents/?${params.toString()}`, { signal }));
   } catch (cause) {
     if (cause instanceof ApiError || (cause instanceof Error && cause.name === "AbortError")) throw cause;
     throw new ApiError("The incident service is unavailable.", 503);
   }
 }
 
-export function useIncidents() {
+export function useIncidents(skip = 0, limit = 50, incidentStatus?: IncidentStatus, severity?: IncidentSeverity) {
   const [state, setState] = useState<IncidentsState>(initialState);
+  
   const load = useCallback(async (signal?: AbortSignal) => {
     setState((current) => ({ ...current, status: "loading", error: null }));
     try {
-      const incidents = await getIncidents(signal);
-      setState({ status: incidents.length ? "ready" : "empty", incidents, error: null });
+      const data = await getIncidents(skip, limit, incidentStatus, severity, signal);
+      setState({ status: data.items.length ? "ready" : "empty", data, error: null });
     } catch (cause) {
       if (cause instanceof Error && cause.name === "AbortError") return;
       const error = cause instanceof ApiError ? cause : new ApiError("Incident data could not be loaded.", 500);
       const status = error.status === 401 ? "unauthorized" : error.status === 502 || error.status === 503 || error.status === 504 ? "unavailable" : "error";
-      setState({ status, incidents: [], error });
+      setState({ status, data: null, error });
     }
-  }, []);
+  }, [skip, limit, incidentStatus, severity]);
 
   useEffect(() => {
     const controller = new AbortController();
     void Promise.resolve().then(() => load(controller.signal));
     return () => controller.abort();
   }, [load]);
+
+  // SSE setup for real-time updates
+  useEffect(() => {
+    const eventSource = new EventSource("/api/v1/incidents/stream/updates");
+    
+    eventSource.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        const parsed = parseIncident(payload.payload);
+        if (parsed) {
+          setState((current) => {
+            if (!current.data) return current;
+            const existingIndex = current.data.items.findIndex(i => i.id === parsed.id);
+            const newItems = [...current.data.items];
+            if (existingIndex >= 0) {
+              newItems[existingIndex] = parsed;
+            } else if (!incidentStatus || parsed.status === incidentStatus) {
+              newItems.unshift(parsed);
+            }
+            return {
+              ...current,
+              data: { ...current.data, items: newItems }
+            };
+          });
+        }
+      } catch (e) {
+        console.error("SSE parse error", e);
+      }
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [incidentStatus]);
 
   return { ...state, refresh: () => load() };
 }

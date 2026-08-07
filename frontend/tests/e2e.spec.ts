@@ -61,4 +61,39 @@ test.describe('Vyomrix End-to-End Test Suite', () => {
     
     await expect(page).toHaveURL(/.*\/login/);
   });
+
+  test('should navigate to all Checkpoint 3 SOC dashboard routes successfully', async ({ page }) => {
+    // We only test that the route loads without client-side crashes. 
+    // Since we don't mock the backend for E2E, data might be "unavailable", which is acceptable for layout validation.
+    await page.goto('/login');
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', password);
+    await Promise.all([
+      page.waitForURL(/.*\/dashboard|\//),
+      page.click('button[type="submit"]')
+    ]);
+
+    const routes = [
+      { path: '/', title: 'Security Overview' },
+      { path: '/incidents', title: 'Incident Response' },
+      { path: '/assets', title: 'Asset Intelligence' },
+      { path: '/siem/alerts', title: 'SIEM Alerts' },
+      { path: '/siem/agents', title: 'Monitored Agents' },
+      { path: '/reports', title: 'Reports' },
+      { path: '/audit', title: 'Audit log' }
+    ];
+
+    for (const route of routes) {
+      await page.goto(route.path);
+      // Depending on the exact rendering state, it might say "Session expired" or show the page header. 
+      // As long as the page doesn't crash with a Next.js 500 error, we consider the route structurally sound.
+      // We check if either the specific page title OR an error boundary state is visible.
+      await expect(
+        page.locator(`text=${route.title}`)
+          .or(page.locator('text=Session expired'))
+          .or(page.locator('text=Access unavailable'))
+          .or(page.locator('text=The service did not respond'))
+      ).toBeVisible({ timeout: 10000 });
+    }
+  });
 });

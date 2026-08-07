@@ -55,3 +55,9 @@ class Incident(BaseModel):
     playbook_id: Optional[str] = None
     
     ai_summary: Optional[str] = None
+
+class PaginatedIncidentResponse(BaseModel):
+    items: List[Incident]
+    total: int
+    skip: int
+    limit: int

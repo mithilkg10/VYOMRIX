@@ -1,6 +1,6 @@
 import uuid
 import logging
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from datetime import datetime, timezone, timedelta
 from .schemas import Incident, IncidentStatus, IncidentSeverity, TimelineEvent, Playbook
 from .repository import IncidentRepository
@@ -29,9 +29,22 @@ class IncidentManager:
         )
         return {pb.id: pb}
 
-    async def get_all_incidents(self) -> List[Incident]:
-        models = await self.repository.get_all()
-        return [Incident.model_validate(m, from_attributes=True) for m in models]
+    async def get_all_incidents(
+        self, 
+        skip: int = 0, 
+        limit: int = 50, 
+        status: Optional[str] = None, 
+        severity: Optional[str] = None
+    ) -> Dict[str, Any]:
+        models = await self.repository.get_all(skip=skip, limit=limit, status=status, severity=severity)
+        total = await self.repository.count(status=status, severity=severity)
+        
+        return {
+            "items": [Incident.model_validate(m, from_attributes=True) for m in models],
+            "total": total,
+            "skip": skip,
+            "limit": limit
+        }
         
     async def get_incident(self, incident_id: str) -> Optional[Incident]:
         model = await self.repository.get_by_id(incident_id)
