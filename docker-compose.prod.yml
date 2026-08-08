@@ -1,5 +1,4 @@
 version: '3.8'
-
 networks:
   vyomrix-public:
     name: vyomrix-public
@@ -8,30 +7,33 @@ networks:
     name: vyomrix-private
     driver: bridge
     internal: true
-
+  vyomrix-app:
+    name: vyomrix-app
+    driver: bridge
+    internal: true
 volumes:
-  postgres_data:
-  reports_data:
-
+  postgres_data: null
+  reports_data: null
 services:
   traefik:
     image: traefik:v2.10
     container_name: vyomrix-traefik
     command:
-      - "--api.dashboard=false"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
+    - --api.dashboard=false
+    - --providers.docker=true
+    - --providers.docker.exposedbydefault=false
+    - --entrypoints.web.address=:80
+    - --entrypoints.websecure.address=:443
+    - --entrypoints.web.http.redirections.entryPoint.to=websecure
+    - --entrypoints.web.http.redirections.entryPoint.scheme=https
     ports:
-      - "80:80"
-      - "443:443"
+    - 80:80
+    - 443:443
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+    - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
-      - vyomrix-public
+    - vyomrix-public
     restart: unless-stopped
-
   postgres:
     image: postgres:15-alpine
     container_name: vyomrix-postgres
@@ -40,29 +42,34 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+    - postgres_data:/var/lib/postgresql/data
     networks:
-      - vyomrix-private
+    - vyomrix-private
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test:
+      - CMD-SHELL
+      - pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}
       interval: 10s
       timeout: 5s
       retries: 5
-
   redis:
     image: redis:7-alpine
     container_name: vyomrix-redis
     command: redis-server --requirepass ${REDIS_PASSWORD:?set REDIS_PASSWORD}
     networks:
-      - vyomrix-private
+    - vyomrix-private
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      test:
+      - CMD
+      - redis-cli
+      - -a
+      - ${REDIS_PASSWORD}
+      - ping
       interval: 10s
       timeout: 5s
       retries: 5
-
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: vyomrix-rabbitmq
@@ -70,56 +77,62 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?set RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:?set RABBITMQ_PASS}
     networks:
-      - vyomrix-private
+    - vyomrix-private
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      test:
+      - CMD
+      - rabbitmq-diagnostics
+      - check_port_connectivity
       interval: 10s
       timeout: 5s
       retries: 5
-
   migration:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: vyomrix-migration
-    command: ["alembic", "upgrade", "head"]
+    command:
+    - alembic
+    - upgrade
+    - head
     environment:
-      - POSTGRES_SERVER=postgres
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_PORT=5432
-      - VYOMRIX_RUNTIME=production
+    - POSTGRES_SERVER=postgres
+    - POSTGRES_USER=${POSTGRES_USER}
+    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    - POSTGRES_DB=${POSTGRES_DB}
+    - POSTGRES_PORT=5432
+    - VYOMRIX_RUNTIME=production
     depends_on:
       postgres:
         condition: service_healthy
     networks:
-      - vyomrix-private
-    restart: "no"
-
+    - vyomrix-private
+    restart: 'no'
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: vyomrix-backend
     environment:
-      - POSTGRES_SERVER=postgres
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_PORT=5432
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_USER=${RABBITMQ_USER}
-      - RABBITMQ_PASS=${RABBITMQ_PASS}
-      - RABBITMQ_PORT=5672
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - SECRET_KEY=${SECRET_KEY:?set SECRET_KEY}
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:?set ALLOWED_ORIGINS}
-      - VYOMRIX_RUNTIME=production
-      - ENVIRONMENT=production
+    - POSTGRES_SERVER=postgres
+    - POSTGRES_USER=${POSTGRES_USER}
+    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    - POSTGRES_DB=${POSTGRES_DB}
+    - POSTGRES_PORT=5432
+    - RABBITMQ_HOST=rabbitmq
+    - RABBITMQ_USER=${RABBITMQ_USER}
+    - RABBITMQ_PASS=${RABBITMQ_PASS}
+    - RABBITMQ_PORT=5672
+    - REDIS_HOST=redis
+    - REDIS_PORT=6379
+    - REDIS_PASSWORD=${REDIS_PASSWORD}
+    - SECRET_KEY=${SECRET_KEY:?set SECRET_KEY}
+    - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:?set ALLOWED_ORIGINS}
+    - VYOMRIX_RUNTIME=production
+    - ENVIRONMENT=production
+    - CSRF_SECRET=
+    - VYOMRIX_SANDBOX=false
     depends_on:
       migration:
         condition: service_completed_successfully
@@ -130,44 +143,48 @@ services:
       rabbitmq:
         condition: service_healthy
     volumes:
-      - reports_data:/app/data/reports
+    - reports_data:/app/data/reports
     networks:
-      - vyomrix-public
-      - vyomrix-private
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
-      - "traefik.http.routers.backend.entrypoints=web"
-      - "traefik.http.services.backend.loadbalancer.server.port=8000"
+    - vyomrix-app
+    - vyomrix-private
+    labels: []
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/ready"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:8000/api/v1/health/ready
       interval: 15s
       timeout: 5s
       retries: 3
-
   worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: vyomrix-worker
-    command: ["python", "-m", "app.worker"]
+    command:
+    - python
+    - -m
+    - app.worker
     environment:
-      - POSTGRES_SERVER=postgres
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_PORT=5432
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_USER=${RABBITMQ_USER}
-      - RABBITMQ_PASS=${RABBITMQ_PASS}
-      - RABBITMQ_PORT=5672
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - SECRET_KEY=${SECRET_KEY:?set SECRET_KEY}
-      - VYOMRIX_RUNTIME=production
-      - ENVIRONMENT=production
+    - POSTGRES_SERVER=postgres
+    - POSTGRES_USER=${POSTGRES_USER}
+    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    - POSTGRES_DB=${POSTGRES_DB}
+    - POSTGRES_PORT=5432
+    - RABBITMQ_HOST=rabbitmq
+    - RABBITMQ_USER=${RABBITMQ_USER}
+    - RABBITMQ_PASS=${RABBITMQ_PASS}
+    - RABBITMQ_PORT=5672
+    - REDIS_HOST=redis
+    - REDIS_PORT=6379
+    - REDIS_PASSWORD=${REDIS_PASSWORD}
+    - SECRET_KEY=${SECRET_KEY:?set SECRET_KEY}
+    - VYOMRIX_RUNTIME=production
+    - ENVIRONMENT=production
+    - CSRF_SECRET=
+    - VYOMRIX_SANDBOX=false
     depends_on:
       migration:
         condition: service_completed_successfully
@@ -178,11 +195,19 @@ services:
       rabbitmq:
         condition: service_healthy
     volumes:
-      - reports_data:/app/data/reports
+    - reports_data:/app/data/reports
     networks:
-      - vyomrix-private
+    - vyomrix-private
     restart: unless-stopped
-
+    healthcheck:
+      test:
+      - CMD
+      - test
+      - -f
+      - /tmp/worker_alive
+      interval: 15s
+      timeout: 5s
+      retries: 3
   frontend:
     build:
       context: ./frontend
@@ -192,12 +217,16 @@ services:
       backend:
         condition: service_healthy
     environment:
-      - BACKEND_API_URL=http://backend:8000
+    - BACKEND_API_URL=http://backend:8000
+    - CSRF_SECRET=
+    - NODE_ENV=production
     networks:
-      - vyomrix-public
+    - vyomrix-public
+    - vyomrix-app
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.frontend.entrypoints=web"
-      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+    - traefik.enable=true
+    - traefik.http.routers.frontend.rule=PathPrefix(/)
+    - traefik.http.routers.frontend.entrypoints=websecure
+    - traefik.http.routers.frontend.tls=true
+    - traefik.http.services.frontend.loadbalancer.server.port=3000
     restart: unless-stopped

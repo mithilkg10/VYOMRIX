@@ -14,35 +14,30 @@ function tokenHasExpired(token: string) {
   }
 }
 
-export function proxy(request: NextRequest) {
-  const token = request.cookies.get("access_token")?.value;
-  const isAuthPage = request.nextUrl.pathname.startsWith("/login");
+export function middleware(request: NextRequest) {
+  const accessToken = request.cookies.get("access_token")?.value;
+  const refreshToken = request.cookies.get("refresh_token")?.value;
+  
+  const isAuthPage = request.nextUrl.pathname.startsWith("/login") || 
+                     request.nextUrl.pathname.startsWith("/forgot-password") || 
+                     request.nextUrl.pathname.startsWith("/reset-password");
+  
+  const hasValidAccess = accessToken && !tokenHasExpired(accessToken);
+  const hasRefresh = !!refreshToken;
   
   let response: NextResponse;
   
-  if ((!token || tokenHasExpired(token)) && !isAuthPage) {
+  if (!hasValidAccess && !hasRefresh && !isAuthPage) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("from", request.nextUrl.pathname);
     response = NextResponse.redirect(loginUrl);
-    if (token) {
+    if (accessToken) {
       response.cookies.delete("access_token");
-      response.cookies.delete("refresh_token");
     }
-  } else if (token && !tokenHasExpired(token) && isAuthPage) {
+  } else if (hasValidAccess && isAuthPage) {
     response = NextResponse.redirect(new URL("/", request.url));
   } else {
     response = NextResponse.next();
-  }
-  
-  // Set CSRF token if missing
-  if (!request.cookies.has("csrf_token")) {
-    const csrfToken = crypto.randomUUID();
-    response.cookies.set("csrf_token", csrfToken, {
-      path: "/",
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      httpOnly: false // Must be accessible to JS
-    });
   }
 
   return response;

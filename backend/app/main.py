@@ -23,19 +23,30 @@ from fastapi import Depends
 from contextlib import asynccontextmanager
 from app.core.security_store import init_security_store
 from app.core.events.bus import event_bus
+from app.core.events.outbox import outbox_worker
 from app.core.logging_config import setup_logging
+from app.core.bootstrap import bootstrap_system
 
 setup_logging()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    await bootstrap_system()
     await init_security_store()
     event_bus.initialize(settings.VYOMRIX_RUNTIME)
     await event_bus.start(is_worker=False)
+    
+    if settings.VYOMRIX_RUNTIME == "local":
+        outbox_worker.start()
+        
     yield
     # Shutdown
+    if settings.VYOMRIX_RUNTIME == "local":
+        await outbox_worker.stop()
     await event_bus.stop()
+    from app.domains.siem.services import close_wazuh_client
+    await close_wazuh_client()
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -79,6 +90,12 @@ def create_app() -> FastAPI:
     app.include_router(incidents_api.router, prefix=f"{settings.API_V1_STR}", dependencies=protected_depends)
     app.include_router(reports_api.router, prefix=f"{settings.API_V1_STR}", dependencies=protected_depends)
     app.include_router(audit_api.router, prefix=f"{settings.API_V1_STR}", dependencies=protected_depends)
+    
+    from app.domains.hunting import api as hunting_api
+    app.include_router(hunting_api.router, prefix=f"{settings.API_V1_STR}", dependencies=protected_depends)
+    
+    from app.domains.phishing import api as phishing_api
+    app.include_router(phishing_api.router, prefix=f"{settings.API_V1_STR}", dependencies=protected_depends)
     from app.domains.system import api as system_api
     app.include_router(system_api.router, prefix=f"{settings.API_V1_STR}", dependencies=protected_depends)
     

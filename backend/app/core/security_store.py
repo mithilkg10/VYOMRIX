@@ -56,9 +56,7 @@ logger = logging.getLogger(__name__)
 
 class RedisSecurityStateStore(SecurityStateStore):
     def __init__(self):
-        auth = f":{settings.REDIS_PASSWORD}@" if settings.REDIS_PASSWORD else ""
-        self.redis_url = f"redis://{auth}{settings.REDIS_HOST}:{settings.REDIS_PORT}/0"
-        self._pool = redis.ConnectionPool.from_url(self.redis_url, decode_responses=True)
+        self._pool = redis.ConnectionPool.from_url(settings.REDIS_URI, decode_responses=True)
         self._client = redis.Redis(connection_pool=self._pool)
 
     def _ensure_connected(self):

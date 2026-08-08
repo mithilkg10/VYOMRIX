@@ -11,7 +11,14 @@ from .schemas import AgentInfo, AlertSource, MITREInfo, NormalizedAlert
 
 logger = logging.getLogger(__name__)
 
-_shared_wazuh_client = None
+_shared_wazuh_client: Optional[httpx.AsyncClient] = None
+
+async def close_wazuh_client() -> None:
+    """Close the shared Wazuh httpx client. Call from app lifespan shutdown."""
+    global _shared_wazuh_client
+    if _shared_wazuh_client is not None:
+        await _shared_wazuh_client.aclose()
+        _shared_wazuh_client = None
 
 class WazuhIntegrationUnavailable(Exception):
     """The configured Wazuh integration cannot currently provide data."""
@@ -82,13 +89,24 @@ class WazuhClient:
     async def get_agents(self) -> List[AgentInfo]:
         if not self.token:
             await self._authenticate()
-        try:
-            response = await self.client.get(f"{self.manager_url}/agents", headers={"Authorization": f"Bearer {self.token}"})
-            response.raise_for_status()
-            payload = response.json()
-        except (httpx.HTTPError, ValueError) as error:
-            logger.warning("Wazuh manager agent request failed: %s", type(error).__name__)
-            raise WazuhIntegrationUnavailable("Wazuh agent data is unavailable.") from error
+        
+        for attempt in range(2):
+            try:
+                response = await self.client.get(f"{self.manager_url}/agents", headers={"Authorization": f"Bearer {self.token}"})
+                response.raise_for_status()
+                payload = response.json()
+                break
+            except httpx.HTTPError as error:
+                if isinstance(error, httpx.HTTPStatusError) and error.response.status_code == 401 and attempt == 0:
+                    logger.info("Wazuh token expired, refreshing...")
+                    await self._authenticate()
+                    continue
+                logger.warning("Wazuh manager agent request failed: %s", type(error).__name__)
+                raise WazuhIntegrationUnavailable("Wazuh agent data is unavailable.") from error
+            except ValueError as error:
+                logger.warning("Wazuh manager agent request failed: %s", type(error).__name__)
+                raise WazuhIntegrationUnavailable("Wazuh agent data is unavailable.") from error
+
         try:
             data = payload["data"]["affected_items"]
             if not isinstance(data, list):

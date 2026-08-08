@@ -55,8 +55,11 @@ class AuditMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
     async def log_async(self, log_data: AuditLogCreate):
-        async with AsyncSessionLocal() as session:
-            await audit_service.create_log(session, log_data)
+        try:
+            async with AsyncSessionLocal() as session:
+                await audit_service.create_log(session, log_data)
+        except Exception as e:
+            logger.error(f"Audit log write failed: {e}")
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):

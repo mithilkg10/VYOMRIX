@@ -22,10 +22,16 @@ export default function DashboardPage() {
     let es: EventSource | null = null;
     let reconnectTimer: NodeJS.Timeout;
 
+    let retryCount = 0;
+
     const connect = () => {
       // Connect to telemetry stream
       es = new EventSource("/api/v1/system/stream/telemetry", { withCredentials: true });
       
+      es.onopen = () => {
+        retryCount = 0; // Reset on successful connection
+      };
+
       es.onmessage = (event) => {
         if (!event.data) return;
         try {
@@ -39,7 +45,9 @@ export default function DashboardPage() {
 
       es.onerror = () => {
         es?.close();
-        reconnectTimer = setTimeout(connect, 5000);
+        const timeout = Math.min(1000 * Math.pow(2, retryCount), 30000); // Max 30 seconds
+        retryCount++;
+        reconnectTimer = setTimeout(connect, timeout);
       };
     };
 
@@ -51,7 +59,27 @@ export default function DashboardPage() {
     };
   }, [load]);
 
-  const failures = useMemo(() => !data ? [] : ([ ["Incidents", data.incidents.error], ["Assets", data.assets.error], ["SIEM alerts", data.alerts.error], ["SIEM agents", data.agents.error] ] as const).flatMap(([name, error]) => error ? [failureLabel(name, error.status)] : []), [data]);
+  const failures = useMemo(() => {
+    if (!data) return [];
+    
+    const fails = (
+      [
+        ["Incidents", data.incidents.error],
+        ["Assets", data.assets.error],
+        ["SIEM alerts", data.alerts.error],
+        ["SIEM agents", data.agents.error],
+      ] as const
+    ).flatMap(([name, error]) => (error ? [failureLabel(name, error.status)] : []));
+
+    if (data.health.error) {
+      fails.push(failureLabel("System health", data.health.error.status));
+    } else if (data.health.data && data.health.data.status === "degraded") {
+      fails.push("System health degraded");
+    }
+
+    return fails;
+  }, [data]);
+  
   if (loading && !data) return <PageContainer><LoadingState label="Loading operational security data…" /></PageContainer>;
   if (!data) return <PageContainer><EmptyState title="No dashboard data" description="No source results are available." /></PageContainer>;
   const allUnauthorized = [data.incidents, data.assets, data.alerts, data.agents].every((source) => source.error?.status === 401);

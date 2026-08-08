@@ -159,10 +159,12 @@ async def register_user(
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
-    user = await auth_service.create_user(db, user_in)
+    try:
+        user = await auth_service.create_user(db, user_in)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+        
     return user
-
-
 
 @router.get("/me", response_model=UserResponse)
 async def read_users_me(current_user: UserModel = Depends(get_current_user)):
@@ -177,7 +179,8 @@ async def forgot_password(
     if token:
         # Sandbox mode logging
         # In a real environment, this would send an email via Celery/SMTP.
-        print(f"[SANDBOX] Password reset requested for {request.email}. Token: {token}")
+        if settings.VYOMRIX_SANDBOX:
+            print(f"[SANDBOX] Password reset requested for {request.email}. Token: {token}")
     
     # Always return success to prevent email enumeration
     return {"status": "success", "message": "If the email is registered, a password reset link has been sent."}
@@ -187,10 +190,12 @@ async def reset_password(
     request: ResetPasswordRequest,
     db: AsyncSession = Depends(get_db)
 ):
-    success = await auth_service.reset_password_with_token(db, request.token, request.new_password)
+    try:
+        success = await auth_service.reset_password_with_token(db, request.token, request.new_password)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+        
     if not success:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token")
         
     return {"status": "success", "message": "Password successfully reset"}
-
-

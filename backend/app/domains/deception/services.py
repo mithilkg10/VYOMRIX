@@ -22,7 +22,7 @@ class DeceptionManager:
         }
         return mapping.get(log_type, HoneypotService.UNKNOWN)
 
-    async def ingest_opencanary_log(self, raw_log: Dict[str, Any]) -> DeceptionEvent:
+    async def ingest_opencanary_log(self, raw_log: Dict[str, Any], db = None) -> DeceptionEvent:
         """
         Parses a raw JSON log from OpenCanary and normalizes it.
         Publishes the normalized event to the internal Event Bus.
@@ -52,7 +52,7 @@ class DeceptionManager:
             event_type=evt_type,
             payload=event.model_dump(),
             source_module="deception"
-        ))
+        ), db=db)
         
         logger.info(f"Ingested Deception Event: {service.value} from {event.src_ip}")
         return event

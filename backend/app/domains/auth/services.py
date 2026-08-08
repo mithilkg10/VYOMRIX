@@ -42,7 +42,20 @@ class AuthService:
         result = await db.execute(select(UserModel).where(UserModel.email == email))
         return result.scalars().first()
 
+    def validate_password_complexity(self, password: str) -> None:
+        if len(password) < 12:
+            raise ValueError("Password must be at least 12 characters long")
+        if not any(c.isupper() for c in password):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(c.islower() for c in password):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not any(c.isdigit() for c in password):
+            raise ValueError("Password must contain at least one number")
+        if not any(c in "!@#$%^&*()-_=+[]{}|;:'\",.<>/?`~" for c in password):
+            raise ValueError("Password must contain at least one special symbol")
+
     async def create_user(self, db: AsyncSession, user: UserCreate) -> UserModel:
+        self.validate_password_complexity(user.password)
         db_user = UserModel(
             id=f"USR-{uuid.uuid4().hex[:8]}",
             email=user.email,
@@ -197,6 +210,7 @@ class AuthService:
 
     async def reset_password_with_token(self, db: AsyncSession, token: str, new_password: str) -> bool:
         import hashlib
+        self.validate_password_complexity(new_password)
         token_hash = hashlib.sha256(token.encode()).hexdigest()
         
         result = await db.execute(

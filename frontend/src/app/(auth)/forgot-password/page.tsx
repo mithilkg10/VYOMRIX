@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { AlertCircle, ShieldCheck, MailCheck, ArrowLeft } from "lucide-react";
-import { forgotPasswordAction } from "./actions";
+import { authApi } from "@/lib/api/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,9 +19,12 @@ export default function ForgotPasswordPage() {
     setSuccess(null);
     const formData = new FormData(event.currentTarget);
     startTransition(async () => {
-      const result = await forgotPasswordAction(formData);
-      if (result?.error) setError(result.error);
-      if (result?.success) setSuccess(result.success);
+      try {
+        const result = await authApi.forgotPassword(formData.get("email") as string);
+        setSuccess(result.message);
+      } catch (err: any) {
+        setError(err.message || "An error occurred");
+      }
     });
   };
 

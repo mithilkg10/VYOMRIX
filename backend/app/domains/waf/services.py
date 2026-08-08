@@ -20,7 +20,7 @@ class WAFManager:
             return WAFEventType.COMMAND_INJECTION
         return WAFEventType.UNKNOWN
 
-    async def ingest_modsec_log(self, raw_log: Dict[str, Any]) -> WAFEvent:
+    async def ingest_modsec_log(self, raw_log: Dict[str, Any], db = None) -> WAFEvent:
         """
         Parses a raw JSON log from ModSecurity/OWASP CRS.
         Normalizes it and publishes to the Event Bus.
@@ -58,7 +58,7 @@ class WAFManager:
             event_type=EventType.WAF_ATTACK_DETECTED,
             payload=event.model_dump(),
             source_module="waf"
-        ))
+        ), db=db)
         
         logger.info(f"Ingested WAF Event: {event_type.value} from {client_ip}")
         return event

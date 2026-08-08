@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { AlertCircle, ShieldCheck, CheckCircle2, EyeOff, Eye } from "lucide-react";
-import { resetPasswordAction } from "./actions";
+import { authApi } from "@/lib/api/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,10 +30,21 @@ function ResetPasswordForm() {
     setError(null);
     setSuccess(null);
     const formData = new FormData(event.currentTarget);
+    const password = formData.get("password") as string;
+    const confirmPassword = formData.get("confirmPassword") as string;
+    
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    
     startTransition(async () => {
-      const result = await resetPasswordAction(formData);
-      if (result?.error) setError(result.error);
-      if (result?.success) setSuccess(result.success);
+      try {
+        const result = await authApi.resetPassword(token as string, password);
+        setSuccess(result.message);
+      } catch (err: any) {
+        setError(err.message || "An error occurred");
+      }
     });
   };
 

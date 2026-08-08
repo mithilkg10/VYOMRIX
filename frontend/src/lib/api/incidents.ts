@@ -155,35 +155,55 @@ export function useIncidents(skip = 0, limit = 50, incidentStatus?: IncidentStat
 
   // SSE setup for real-time updates
   useEffect(() => {
-    const eventSource = new EventSource("/api/v1/incidents/stream/updates");
-    
-    eventSource.onmessage = (event) => {
-      try {
-        const payload = JSON.parse(event.data);
-        const parsed = parseIncident(payload.payload);
-        if (parsed) {
-          setState((current) => {
-            if (!current.data) return current;
-            const existingIndex = current.data.items.findIndex(i => i.id === parsed.id);
-            const newItems = [...current.data.items];
-            if (existingIndex >= 0) {
-              newItems[existingIndex] = parsed;
-            } else if (!incidentStatus || parsed.status === incidentStatus) {
-              newItems.unshift(parsed);
-            }
-            return {
-              ...current,
-              data: { ...current.data, items: newItems }
-            };
-          });
+    let eventSource: EventSource | null = null;
+    let reconnectTimer: NodeJS.Timeout;
+    let retryCount = 0;
+
+    const connect = () => {
+      eventSource = new EventSource("/api/v1/incidents/stream/updates");
+      
+      eventSource.onopen = () => {
+        retryCount = 0;
+      };
+
+      eventSource.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          const parsed = parseIncident(payload.payload);
+          if (parsed) {
+            setState((current) => {
+              if (!current.data) return current;
+              const existingIndex = current.data.items.findIndex(i => i.id === parsed.id);
+              const newItems = [...current.data.items];
+              if (existingIndex >= 0) {
+                newItems[existingIndex] = parsed;
+              } else if (!incidentStatus || parsed.status === incidentStatus) {
+                newItems.unshift(parsed);
+              }
+              return {
+                ...current,
+                data: { ...current.data, items: newItems }
+              };
+            });
+          }
+        } catch (e) {
+          console.error("SSE parse error", e);
         }
-      } catch (e) {
-        console.error("SSE parse error", e);
-      }
+      };
+
+      eventSource.onerror = () => {
+        eventSource?.close();
+        const timeout = Math.min(1000 * Math.pow(2, retryCount), 30000);
+        retryCount++;
+        reconnectTimer = setTimeout(connect, timeout);
+      };
     };
 
+    connect();
+
     return () => {
-      eventSource.close();
+      eventSource?.close();
+      clearTimeout(reconnectTimer);
     };
   }, [incidentStatus]);
 

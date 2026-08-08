@@ -19,8 +19,14 @@ async function refreshAccessToken(refreshToken: string) {
   refreshPromise = (async () => {
     try {
       const response = await fetch(
-        getBackendApiUrl() + "/api/v1/auth/refresh?refresh_token=" + encodeURIComponent(refreshToken),
-        { method: "POST", cache: "no-store", signal: AbortSignal.timeout(15_000) },
+        getBackendApiUrl() + "/api/v1/auth/refresh",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+          cache: "no-store",
+          signal: AbortSignal.timeout(15_000)
+        }
       );
       if (!response.ok) return null;
       return response.json() as Promise<{ access_token: string; refresh_token?: string }>;
@@ -68,7 +74,8 @@ async function proxy(request: NextRequest, { params }: RouteContext) {
   const targetUrl = new URL("/api/v1/" + path.join("/"), getBackendApiUrl());
   targetUrl.search = request.nextUrl.search;
   const requestBody = request.method === "GET" ? undefined : await request.arrayBuffer();
-  const forward = (token?: string) => fetch(targetUrl, {
+    const isSSE = request.headers.get("accept") === "text/event-stream";
+    const forward = (token?: string) => fetch(targetUrl, {
     method: request.method,
     headers: {
       Accept: request.headers.get("accept") ?? "application/json",
@@ -77,7 +84,7 @@ async function proxy(request: NextRequest, { params }: RouteContext) {
     },
     body: requestBody,
     cache: "no-store",
-    signal: AbortSignal.timeout(15_000),
+    ...(isSSE ? {} : { signal: AbortSignal.timeout(15_000) }),
   });
   let upstream = await forward(cookieStore.get(ACCESS_TOKEN_COOKIE)?.value);
   let refreshed: { access_token: string; refresh_token?: string } | null = null;

@@ -22,6 +22,7 @@ class Event(BaseModel):
     event_type: EventType
     payload: Dict[str, Any]
     source_module: str
+    event_id: str = None
 
 EventHandler = Callable[[Event], Any]
 
@@ -188,8 +189,21 @@ class EventBusProxy:
     def subscribe_worker(self, event_type: EventType, handler: EventHandler):
         if self._bus: self._bus.subscribe_worker(event_type, handler)
 
-    async def publish(self, event: Event):
-        if self._bus: await self._bus.publish(event)
+    async def publish(self, event: Event, db = None):
+        if db:
+            import uuid
+            from app.core.events.models import OutboxEvent, EventStatus
+            outbox_event = OutboxEvent(
+                id=str(uuid.uuid4()),
+                event_type=event.event_type.value,
+                payload=event.payload,
+                source_module=event.source_module,
+                status=EventStatus.PENDING
+            )
+            db.add(outbox_event)
+            logger.debug(f"Event {event.event_type.value} written to outbox")
+        else:
+            if self._bus: await self._bus.publish(event)
 
     async def start(self, is_worker: bool = False):
         if self._bus: await self._bus.start(is_worker)

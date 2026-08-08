@@ -66,33 +66,70 @@ class RabbitMQEventBus(BaseEventBus):
             await self._setup_live_event_queues()
 
     async def _setup_worker_queues(self):
-        # Worker binds durable queues
-        queue = await self.channel.declare_queue("vyomrix.worker.queue", durable=True)
+        # 1. Setup DLX and DLQ
+        dlx = await self.channel.declare_exchange("vyomrix.dlx", aio_pika.ExchangeType.DIRECT, durable=True)
+        dlq = await self.channel.declare_queue("vyomrix.dlq", durable=True)
+        await dlq.bind(dlx, routing_key="vyomrix.worker.queue")
+
+        # 2. Worker binds durable queues with DLX args
+        queue = await self.channel.declare_queue(
+            "vyomrix.worker.queue", 
+            durable=True,
+            arguments={
+                "x-dead-letter-exchange": "vyomrix.dlx",
+                "x-dead-letter-routing-key": "vyomrix.worker.queue"
+            }
+        )
         # Bind all subscribed event types
         for event_type in self._worker_handlers.keys():
             await queue.bind(self.durable_exchange, routing_key=event_type.value)
             
         async def process_message(message: aio_pika.abc.AbstractIncomingMessage):
-            async with message.process():
-                try:
+            try:
+                async with message.process(requeue=False):
                     payload = json.loads(message.body.decode())
                     event = Event(**payload)
                     handler = self._worker_handlers.get(event.event_type)
                     if handler:
                         logger.info(f"Worker processing event {event.event_type.value}")
-                        if asyncio.iscoroutinefunction(handler):
-                            await handler(event)
-                        else:
-                            await asyncio.to_thread(handler, event)
-                        
-                        # Once processed by worker, broadcast to live exchange for SSE
+
+                        # Idempotency check with InboxEvent
+                        from app.core.database import AsyncSessionLocal
+                        from app.core.events.models import InboxEvent
+                        from sqlalchemy import select
+
+                        should_process = True
+                        if event.event_id:
+                            async with AsyncSessionLocal() as session:
+                                stmt = select(InboxEvent).where(InboxEvent.id == event.event_id)
+                                result = await session.execute(stmt)
+                                if result.scalars().first():
+                                    logger.info(f"Event {event.event_id} already processed, skipping.")
+                                    should_process = False
+                                else:
+                                    inbox_evt = InboxEvent(
+                                        id=event.event_id,
+                                        event_type=event.event_type.value,
+                                        payload=event.payload,
+                                        source_module=event.source_module
+                                    )
+                                    session.add(inbox_evt)
+                                    await session.commit()
+
+                        if should_process:
+                            if asyncio.iscoroutinefunction(handler):
+                                await handler(event)
+                            else:
+                                await asyncio.to_thread(handler, event)
+
+                        # Broadcast to live exchange for SSE consumers
                         await self.live_exchange.publish(
                             aio_pika.Message(body=message.body),
                             routing_key=""
                         )
-                except Exception as e:
-                    logger.error(f"Worker failed to process message: {e}")
-                    # In a real app, send to DLQ here
+            except Exception as e:
+                logger.error(f"Worker failed to process message, routing to DLQ: {e}")
+                raise
                     
         await queue.consume(process_message)
         logger.info("Worker started consuming from durable queue.")

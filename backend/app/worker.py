@@ -2,6 +2,7 @@ import asyncio
 import logging
 from app.core.config import settings
 from app.core.events.bus import event_bus
+from app.core.events.outbox import outbox_worker
 from app.core.security_store import init_security_store
 
 # Import all modules that register worker event handlers
@@ -25,16 +26,26 @@ async def main():
     # Start the event bus in worker mode
     await event_bus.start(is_worker=True)
     
+    # Start the outbox polling worker
+    outbox_worker.start()
+    
     logger.info("Vyomrix Worker is running and listening for events. Press Ctrl+C to exit.")
     
     # Keep the worker running
+    import os
     try:
         while True:
-            await asyncio.sleep(3600)
+            # Touch healthcheck file
+            with open("/tmp/worker_alive", "w") as f:
+                f.write("OK")
+            await asyncio.sleep(10)
     except asyncio.CancelledError:
         logger.info("Worker shutting down...")
     finally:
+        await outbox_worker.stop()
         await event_bus.stop()
+        if os.path.exists("/tmp/worker_alive"):
+            os.remove("/tmp/worker_alive")
 
 if __name__ == "__main__":
     try:

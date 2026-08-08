@@ -17,6 +17,7 @@ from app.domains.detection.models import SigmaRuleModel
 from app.domains.mitre.models import TechniqueModel
 from app.domains.auth.models import UserModel, RefreshSessionModel
 from app.domains.audit.models import AuditLogModel
+from app.core.events.models import OutboxEvent, InboxEvent
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
