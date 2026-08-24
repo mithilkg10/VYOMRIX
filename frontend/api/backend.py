@@ -4,11 +4,23 @@ import asyncio
 import secrets
 from pathlib import Path
 
-# Vercel-hosted showcase runtime. The original backend remains unchanged at repo root.
-os.environ.setdefault("VYOMRIX_RUNTIME", "local")
-os.environ.setdefault("ENVIRONMENT", "development")
-os.environ.setdefault("VYOMRIX_SANDBOX", "false")
-os.environ.setdefault("ACCESS_TOKEN_EXPIRE_MINUTES", "240")
+# Vercel-hosted showcase runtime. Some Vercel project variables currently exist
+# as blank strings, so normalize deployment defaults before Pydantic imports them.
+_DEPLOYMENT_DEFAULTS = {
+    "VYOMRIX_RUNTIME": "local",
+    "ENVIRONMENT": "development",
+    "VYOMRIX_SANDBOX": "false",
+    "ACCESS_TOKEN_EXPIRE_MINUTES": "240",
+    "POSTGRES_PORT": "5433",
+    "REDIS_PORT": "6379",
+    "RABBITMQ_PORT": "5672",
+    "WAZUH_VERIFY_TLS": "false",
+    "SECRET_KEY": "vyomrix-vercel-showcase-jwt-secret-change-for-production",
+    "CSRF_SECRET": "vyomrix-vercel-showcase-csrf-secret-change-for-production",
+}
+for key, value in _DEPLOYMENT_DEFAULTS.items():
+    if not os.environ.get(key):
+        os.environ[key] = value
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1] / "backend"
 if str(BACKEND_ROOT) not in sys.path:
