@@ -1,4 +1,5 @@
 import logging
+import os
 import uuid
 import secrets
 import string
@@ -12,6 +13,7 @@ from passlib.context import CryptContext
 logger = logging.getLogger(__name__)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 def generate_secure_password(length=16):
     alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
     while True:
@@ -22,19 +24,18 @@ def generate_secure_password(length=16):
             break
     return password
 
+
 async def bootstrap_system():
     """Initializes the database with an admin user and core permissions if empty."""
     async with AsyncSessionLocal() as session:
-        # Check if any users exist
         stmt = select(UserModel).limit(1)
         result = await session.execute(stmt)
         if result.scalars().first():
             logger.info("Users already exist. Skipping bootstrap.")
             return
 
-        # No users exist, create initial admin
         email = settings.VYOMRIX_DEV_ADMIN_EMAIL or "admin@vyomrix.local"
-        
+
         if settings.VYOMRIX_RUNTIME == "production":
             password = generate_secure_password()
             logger.warning("*" * 60)
@@ -45,12 +46,13 @@ async def bootstrap_system():
             logger.warning("*" * 60)
         else:
             password = settings.VYOMRIX_DEV_ADMIN_PASSWORD or "VyomrixAdmin123!"
-            logger.info(f"Created local development admin: {email} / {password}")
+            logger.info(f"Created local development admin: {email}")
 
         hashed_password = pwd_context.hash(password)
-        
+        admin_id = "00000000-0000-4000-8000-000000000001" if os.getenv("VERCEL") else str(uuid.uuid4())
+
         admin_user = UserModel(
-            id=str(uuid.uuid4()),
+            id=admin_id,
             email=email,
             hashed_password=hashed_password,
             full_name="System Administrator",
@@ -58,7 +60,7 @@ async def bootstrap_system():
             role="Super Admin",
             permissions=["ADMIN_ALL"]
         )
-        
+
         session.add(admin_user)
         try:
             await session.commit()

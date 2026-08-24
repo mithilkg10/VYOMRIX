@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getBackendApiUrl } from "@/lib/api/config";
 import { setAuthCookies } from "@/lib/api/cookies";
-import crypto from "crypto";
 import { generateCsrfToken } from "@/lib/csrf";
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    
+
+    // The UI labels this field as email; FastAPI's OAuth2 form expects username.
+    if (!formData.get("username") && formData.get("email")) {
+      formData.set("username", String(formData.get("email")));
+    }
+
     let backendResponse;
     try {
       backendResponse = await fetch(`${getBackendApiUrl()}/api/v1/auth/login`, {
@@ -27,21 +31,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(data, { status: backendResponse.status });
     }
 
-    // Success - intercept tokens and set secure cookies
     const { access_token, refresh_token, session_id, token_type, ...safeMetadata } = data;
-    
-    // Generate a new CSRF token cryptographically bound to the session (using refresh_token as stable ID)
     const csrfToken = generateCsrfToken(refresh_token || access_token);
 
     const response = NextResponse.json({
       status: "success",
       session_id,
-      ...safeMetadata
+      ...safeMetadata,
     });
 
-    // Set secure HTTP-only cookies
     setAuthCookies(response, access_token, refresh_token, csrfToken);
-    
     return response;
   } catch (error) {
     console.error("Login route error:", error);

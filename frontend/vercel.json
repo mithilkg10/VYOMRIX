@@ -1,0 +1,19 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/backend.py": {
+      "maxDuration": 60,
+      "includeFiles": "backend/**"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/v1",
+      "destination": "/api/backend?backend_path=/api/v1"
+    },
+    {
+      "source": "/api/v1/:path*",
+      "destination": "/api/backend?backend_path=/api/v1/:path*"
+    }
+  ]
+}

@@ -8,43 +8,43 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Vyomrix Enterprise Security Platform"
     API_V1_STR: str = "/api/v1"
     ENVIRONMENT: str = "development"
-    
+
     # Runtime Configuration
-    VYOMRIX_RUNTIME: str = "production"  # 'production' or 'local'
+    VYOMRIX_RUNTIME: str = "local" if os.getenv("VERCEL") else "production"
     VYOMRIX_SANDBOX: bool = False
-    
+
     # Development Admin (Local Only)
     VYOMRIX_DEV_ADMIN_EMAIL: Optional[str] = None
     VYOMRIX_DEV_ADMIN_PASSWORD: Optional[str] = None
-    
+
     # Security
     SECRET_KEY: str = "development-only-secret-change-before-production"
     CSRF_SECRET: str = "development-only-csrf-change-before-production"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
-    
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 240 if os.getenv("VERCEL") else 15
+
     # Postgres
     POSTGRES_USER: str = "vyomrix"
     POSTGRES_PASSWORD: str = "vyomrix_secret"
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_PORT: str = "5433"
     POSTGRES_DB: str = "vyomrix"
-    
+
     # Redis
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
     REDIS_PASSWORD: Optional[str] = None
-    
+
     # RabbitMQ
     RABBITMQ_USER: str = "guest"
     RABBITMQ_PASS: str = "guest"
     RABBITMQ_HOST: str = "localhost"
     RABBITMQ_PORT: int = 5672
-    
+
     @property
     def RABBITMQ_URI(self) -> str:
         return f"amqp://{self.RABBITMQ_USER}:{self.RABBITMQ_PASS}@{self.RABBITMQ_HOST}:{self.RABBITMQ_PORT}/"
-    
+
     # AI Providers
     GEMINI_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
@@ -101,10 +101,12 @@ class Settings(BaseSettings):
     @property
     def cors_origins(self) -> list[str]:
         return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",") if origin.strip()]
-        
+
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
         if self.VYOMRIX_RUNTIME == "local":
+            if os.getenv("VERCEL"):
+                return "sqlite+aiosqlite:////tmp/vyomrix-local.db"
             return "sqlite+aiosqlite:///./vyomrix-local.db"
         user = quote_plus(self.POSTGRES_USER)
         password = quote_plus(self.POSTGRES_PASSWORD)
