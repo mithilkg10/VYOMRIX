@@ -171,8 +171,11 @@ class AuthService:
         
         return {"jti": new_jti, "family_id": family_id, "session_id": new_session_id, "is_grace": False}
 
-    async def revoke_session(self, db: AsyncSession, session_id: str, reason: str = "user_logout"):
-        result = await db.execute(select(RefreshSessionModel).where(RefreshSessionModel.id == session_id))
+    async def revoke_session(self, db: AsyncSession, session_id: str, user_id: str, reason: str = "user_logout"):
+        result = await db.execute(select(RefreshSessionModel).where(
+            RefreshSessionModel.id == session_id,
+            RefreshSessionModel.user_id == user_id,
+        ))
         session = result.scalars().first()
         if session and not session.revoked_at:
             session.revoked_at = datetime.now(timezone.utc).replace(tzinfo=None)

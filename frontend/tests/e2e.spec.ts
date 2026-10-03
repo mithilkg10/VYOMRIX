@@ -43,6 +43,8 @@ test.describe('Vyomrix End-to-End Test Suite', () => {
     
     // Wait for the UI to load
     await expect(page.locator('h1').filter({ hasText: /^Dashboard$|^Security Overview$/ })).toBeVisible();
+    const refreshToken = (await page.context().cookies()).find((cookie) => cookie.name === 'refresh_token')?.value;
+    expect(refreshToken).toBeTruthy();
     
     // Check Profile
     const menuButton = page.locator('button[aria-label="User menu"]').or(page.locator('text=Profile')).or(page.locator('.user-menu'));
@@ -56,6 +58,11 @@ test.describe('Vyomrix End-to-End Test Suite', () => {
     await expect(page).toHaveURL(/.*\/login/);
     await page.goto('/');
     await expect(page).toHaveURL(/.*\/login/);
+    const refreshAfterLogout = await page.request.post(
+      `${process.env.BACKEND_API_URL || 'http://127.0.0.1:8000'}/api/v1/auth/refresh`,
+      { data: { refresh_token: refreshToken } }
+    );
+    expect(refreshAfterLogout.status()).toBe(401);
   });
 
   test('should navigate to all Checkpoint 3 SOC dashboard routes successfully', async ({ page }) => {

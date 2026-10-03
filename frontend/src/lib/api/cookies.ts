@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 export const ACCESS_TOKEN_COOKIE = "access_token";
 export const REFRESH_TOKEN_COOKIE = "refresh_token";
 export const CSRF_TOKEN_COOKIE = "csrf_token";
+export const SESSION_ID_COOKIE = "session_id";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -35,7 +36,8 @@ export function setAuthCookies(
   response: NextResponse,
   accessToken: string,
   refreshToken?: string,
-  csrfToken?: string
+  csrfToken?: string,
+  sessionId?: string
 ) {
   response.cookies.set(ACCESS_TOKEN_COOKIE, accessToken, getAccessTokenCookieOptions());
 
@@ -46,12 +48,16 @@ export function setAuthCookies(
   if (csrfToken) {
     response.cookies.set(CSRF_TOKEN_COOKIE, csrfToken, getCsrfTokenCookieOptions());
   }
+  if (sessionId) {
+    response.cookies.set(SESSION_ID_COOKIE, sessionId, getRefreshTokenCookieOptions());
+  }
 }
 
 export function clearAuthCookies(response: NextResponse) {
   response.cookies.delete(ACCESS_TOKEN_COOKIE);
   response.cookies.delete(REFRESH_TOKEN_COOKIE);
   response.cookies.delete(CSRF_TOKEN_COOKIE);
+  response.cookies.delete(SESSION_ID_COOKIE);
 }
 
 export async function clearAuthCookiesAction() {
@@ -59,5 +65,6 @@ export async function clearAuthCookiesAction() {
   cookieStore.delete(ACCESS_TOKEN_COOKIE);
   cookieStore.delete(REFRESH_TOKEN_COOKIE);
   cookieStore.delete(CSRF_TOKEN_COOKIE);
+  cookieStore.delete(SESSION_ID_COOKIE);
 }
 

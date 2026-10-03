@@ -8,10 +8,11 @@ import { clearAuthCookiesAction } from "@/lib/api/cookies";
 export async function logoutAction() {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get("access_token")?.value;
+  const sessionId = cookieStore.get("session_id")?.value;
 
-  if (accessToken) {
+  if (accessToken && sessionId) {
     try {
-      await fetch(`${getBackendApiUrl()}/api/v1/auth/logout`, {
+      await fetch(`${getBackendApiUrl()}/api/v1/auth/logout?session_id=${encodeURIComponent(sessionId)}`, {
         method: "POST",
         headers: {
           Accept: "application/json",

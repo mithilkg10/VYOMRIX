@@ -21,13 +21,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ detail: "Not authenticated" }, { status: 401 });
     }
 
-    // Read session_id from URL query params
-    const { searchParams } = new URL(request.url);
-    const targetSessionId = searchParams.get("session_id");
-
-    const targetUrl = targetSessionId 
-      ? `${getBackendApiUrl()}/api/v1/auth/logout?session_id=${encodeURIComponent(targetSessionId)}`
-      : `${getBackendApiUrl()}/api/v1/auth/logout`;
+    const targetSessionId = cookieStore.get("session_id")?.value;
+    if (!targetSessionId) {
+      const response = NextResponse.json({ detail: "Missing session ID" }, { status: 400 });
+      clearAuthCookies(response);
+      return response;
+    }
+    const targetUrl = `${getBackendApiUrl()}/api/v1/auth/logout?session_id=${encodeURIComponent(targetSessionId)}`;
 
     const backendResponse = await fetch(targetUrl, {
       method: "POST",
@@ -42,10 +42,7 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.json(data, { status: backendResponse.status });
 
-    // Always clear cookies on logout
-    if (backendResponse.ok) {
-      clearAuthCookies(response);
-    }
+    clearAuthCookies(response);
     
     return response;
   } catch (error) {

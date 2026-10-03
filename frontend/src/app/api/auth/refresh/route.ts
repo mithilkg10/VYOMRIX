@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       ...safeMetadata
     });
 
-    setAuthCookies(response, access_token, new_refresh_token, csrfToken);
+    setAuthCookies(response, access_token, new_refresh_token, csrfToken, session_id);
     
     return response;
   } catch (error) {

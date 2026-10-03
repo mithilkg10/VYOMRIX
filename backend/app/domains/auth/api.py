@@ -146,7 +146,7 @@ async def logout(
     db: AsyncSession = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
 ):
-    await auth_service.revoke_session(db, session_id, reason="user_logout")
+    await auth_service.revoke_session(db, session_id, current_user.id, reason="user_logout")
     return {"status": "success"}
 
 @router.post("/sessions/revoke-all")
