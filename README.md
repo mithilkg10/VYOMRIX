@@ -1,5 +1,7 @@
 # VYOMRIX Security Platform
 
+[Portfolio case study](https://mithilkg-portfolio.vercel.app/projects/vyomrix-security-platform) · [Documented Cyber Defense Lab investigations](https://github.com/mithilkg10/MKG-Cyber-Defense-Lab)
+
 **Enterprise security operations platform for XDR, SOC workflows, threat intelligence, detection engineering, deception, incident response, and AI assisted analysis.**
 
 VYOMRIX is a full stack cybersecurity engineering project built to demonstrate how multiple security operations capabilities can be brought into one coherent platform. The project combines a Next.js frontend, a FastAPI backend, PostgreSQL, Redis, background task processing, security integrations, automated tests, and end to end validation.
