@@ -49,8 +49,10 @@ export default function LoginPage() {
       </form>
       <div className="mt-6 rounded-xl border border-border bg-background/40 p-4 text-sm">
         <p className="font-medium">Recruiter Demo</p>
-        <p className="mt-1 text-muted-foreground">Read-only SOC analyst access to synthetic data. Request the demo password from Mithil.</p>
-        <Button type="button" variant="outline" className="mt-3" onClick={() => setEmail("demo.analyst@mithilkg.dev")}>Use Demo Account</Button>
+        <p className="mt-1 text-muted-foreground">Open a read-only SOC view using sanitized synthetic data. No password is required.</p>
+        <Button asChild type="button" variant="outline" className="mt-3">
+          <Link href="/demo">Open Recruiter Demo</Link>
+        </Button>
       </div>
       <div className="mt-6 flex items-center gap-2 border-t border-border pt-4 text-xs text-muted-foreground"><LockKeyhole className="h-3.5 w-3.5 text-success" /> Session cookies are protected and scoped to this platform.</div>
     </div>
