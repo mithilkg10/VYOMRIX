@@ -70,7 +70,11 @@ jobs:
       - name: Run Backend Migrations
         working-directory: ./backend
         env:
-          DATABASE_URL: postgresql+asyncpg://vyomrix:testpassword@localhost:5432/vyomrix_test
+          POSTGRES_USER: vyomrix
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_SERVER: localhost
+          POSTGRES_PORT: '5432'
+          POSTGRES_DB: vyomrix_test
           REDIS_HOST: localhost
           SECRET_KEY: test_secret_key_12345
         run: |
@@ -79,7 +83,11 @@ jobs:
       - name: Run Backend Tests
         working-directory: ./backend
         env:
-          DATABASE_URL: postgresql+asyncpg://vyomrix:testpassword@localhost:5432/vyomrix_test
+          POSTGRES_USER: vyomrix
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_SERVER: localhost
+          POSTGRES_PORT: '5432'
+          POSTGRES_DB: vyomrix_test
           REDIS_HOST: localhost
           SECRET_KEY: test_secret_key_12345
           PYTHONPATH: .
@@ -89,7 +97,11 @@ jobs:
       - name: Start Backend Server
         working-directory: ./backend
         env:
-          DATABASE_URL: postgresql+asyncpg://vyomrix:testpassword@localhost:5432/vyomrix_test
+          POSTGRES_USER: vyomrix
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_SERVER: localhost
+          POSTGRES_PORT: '5432'
+          POSTGRES_DB: vyomrix_test
           REDIS_HOST: localhost
           SECRET_KEY: test_secret_key_12345
         run: |
