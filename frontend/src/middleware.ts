@@ -21,7 +21,7 @@ export function middleware(request: NextRequest) {
   const isAuthPage = request.nextUrl.pathname.startsWith("/login") || 
                      request.nextUrl.pathname.startsWith("/forgot-password") || 
                      request.nextUrl.pathname.startsWith("/reset-password");
-  const isPublicDemo = request.nextUrl.pathname === "/demo";
+  const isPublicDemo = request.nextUrl.pathname === "/demo" || request.nextUrl.pathname === "/demo-login";
   
   const hasValidAccess = accessToken && !tokenHasExpired(accessToken);
   const hasRefresh = !!refreshToken;
