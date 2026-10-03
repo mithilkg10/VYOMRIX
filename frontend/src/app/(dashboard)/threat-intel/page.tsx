@@ -10,7 +10,7 @@ import { ApiError } from "@/lib/api/client";
 import { IOC_TYPES, type IocType, type ThreatIntelResult, lookupIoc } from "@/lib/api/threat-intel";
 
 export default function ThreatIntelPage() {
-  const [iocValue, setIocValue] = useState(""); const [iocType, setIocType] = useState<IocType>("ip"); const [result, setResult] = useState<ThreatIntelResult | null>(null); const [error, setError] = useState<ApiError | null>(null); const [validationError, setValidationError] = useState<string | null>(null); const [submitting, setSubmitting] = useState(false);
+  const [iocValue, setIocValue] = useState("198.51.100.25"); const [iocType, setIocType] = useState<IocType>("ip"); const [result, setResult] = useState<ThreatIntelResult | null>(null); const [error, setError] = useState<ApiError | null>(null); const [validationError, setValidationError] = useState<string | null>(null); const [submitting, setSubmitting] = useState(false);
   const submit = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); const value = iocValue.trim(); if (submitting) return; if (!isValidIoc(value, iocType)) { setValidationError(`Enter a valid ${iocType.toUpperCase()} indicator.`); return; } setSubmitting(true); setError(null); setValidationError(null); setResult(null); try { setResult(await lookupIoc(value, iocType)); } catch (cause) { setError(cause instanceof ApiError ? cause : new ApiError("Threat intelligence could not be loaded.", 500)); } finally { setSubmitting(false); } };
   return <PageContainer>
     <PageHeader title="Threat Intelligence" description="Look up a submitted indicator only through configured intelligence providers." />
