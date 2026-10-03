@@ -23,7 +23,8 @@ export default function LoginPage() {
     const submittedPassword = String(formData.get("password") ?? "");
 
     if (submittedEmail === "demo.analyst@mithilkg.dev" && submittedPassword === "VyomrixDemo#2026!") {
-      router.push("/demo");
+      document.cookie = "demo_session=1; Path=/; Max-Age=3600; SameSite=Lax";
+      router.push("/");
       return;
     }
 
