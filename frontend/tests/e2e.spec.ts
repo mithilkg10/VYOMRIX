@@ -45,6 +45,7 @@ test.describe('Vyomrix End-to-End Test Suite', () => {
     await expect(page.locator('h1').filter({ hasText: /^Dashboard$|^Security Overview$/ })).toBeVisible();
     const refreshToken = (await page.context().cookies()).find((cookie) => cookie.name === 'refresh_token')?.value;
     expect(refreshToken).toBeTruthy();
+    await page.context().clearCookies({ name: 'access_token' });
     
     // Check Profile
     const menuButton = page.locator('button[aria-label="User menu"]').or(page.locator('text=Profile')).or(page.locator('.user-menu'));
