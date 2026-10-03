@@ -1,5 +1,7 @@
 # Vyomrix Feature Matrix
 
+> Historical planning snapshot. The statuses and 0% test-coverage cells below are not the current release state. See [RELEASE_READINESS.md](RELEASE_READINESS.md) for supported workflows, unavailable integrations, and validation commands.
+
 This matrix tracks the completion status of all required routes and capabilities for the Vyomrix v1.0 Enterprise release.
 
 | Route / Capability | Current Status | Required Frontend Work | Required Backend Work | Permissions | Test Coverage | Final Verification |
