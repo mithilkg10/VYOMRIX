@@ -111,41 +111,44 @@ class AuthService:
 
     async def rotate_refresh_token(self, db: AsyncSession, jti: str, family_id: str, ip_address: Optional[str] = None, user_agent: Optional[str] = None) -> Optional[dict]:
         """Atomically rotates a refresh token. Detects replay attacks and revokes families."""
-        # Using row-level locking or optimistic concurrency depending on dialect. For AsyncSession we can use with_for_update()
-        result = await db.execute(
-            select(RefreshSessionModel).where(RefreshSessionModel.family_id == family_id).with_for_update()
+        # Lock the presented session, then read its replacement in a fresh query.
+        # A family-wide SELECT started before another transaction commits can have
+        # a stale row set even after waiting for its row lock.
+        active_session = await db.scalar(
+            select(RefreshSessionModel)
+            .where(RefreshSessionModel.family_id == family_id, RefreshSessionModel.jti == jti)
+            .with_for_update()
         )
-        sessions = result.scalars().all()
-        
-        if not sessions:
-            return None # Invalid family
-            
-        # Find the active session for this family (the one that hasn't been replaced or revoked)
-        # We sort by created_at desc to find the latest
-        sessions.sort(key=lambda s: s.created_at, reverse=True)
-        active_session = sessions[0]
-        
-        # If the active session is revoked, or the provided JTI doesn't match the active JTI, this is a REPLAY ATTACK or concurrent refresh reuse.
-        if active_session.revoked_at is not None or active_session.jti != jti:
-            # Check for legitimate duplicate request within 5-second grace period
-            replacement_session = next((s for s in sessions if s.parent_jti == jti), None)
-            
-            if replacement_session and replacement_session.created_at >= datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(seconds=5):
-                # Legitimate retry within grace period. Return the same replacement token data.
-                return {"jti": replacement_session.jti, "family_id": family_id, "session_id": replacement_session.id, "is_grace": True}
-                
-            # Replay detection: The token used is old or already rotated outside grace window. Revoke the entire family!
-            now = datetime.now(timezone.utc).replace(tzinfo=None)
-            for s in sessions:
-                if not s.revoked_at:
-                    s.revoked_at = now
-                    s.revocation_reason = "replay_detected"
-                    s.replay_detected_at = now
-            await db.commit()
-            return None # Deny refresh
-            
-        # If we got here, it's a valid rotation. Mark old as rotated and create new.
+        if not active_session or active_session.revoked_at is not None:
+            return None
+
         now = datetime.now(timezone.utc).replace(tzinfo=None)
+        if active_session.expires_at <= now:
+            return None
+
+        if active_session.replacement_jti:
+            replacement_session = await db.scalar(
+                select(RefreshSessionModel).where(
+                    RefreshSessionModel.family_id == family_id,
+                    RefreshSessionModel.jti == active_session.replacement_jti,
+                )
+            )
+            if (replacement_session and not replacement_session.revoked_at
+                    and replacement_session.created_at >= now - timedelta(seconds=5)):
+                return {"jti": replacement_session.jti, "family_id": family_id,
+                        "session_id": replacement_session.id, "is_grace": True}
+
+            sessions = (await db.scalars(
+                select(RefreshSessionModel).where(RefreshSessionModel.family_id == family_id)
+            )).all()
+            for session in sessions:
+                if not session.revoked_at:
+                    session.revoked_at = now
+                    session.revocation_reason = "replay_detected"
+                    session.replay_detected_at = now
+            await db.commit()
+            return None
+
         new_jti = secrets.token_urlsafe(32)
         new_session_id = f"SESS-{uuid.uuid4().hex[:8]}"
         
