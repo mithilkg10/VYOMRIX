@@ -8,6 +8,11 @@ export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("access_token")?.value;
+    const demoSession = cookieStore.get("demo_session")?.value === "1";
+
+    if (demoSession) {
+      return NextResponse.json({ status: "ok", detail: "No other sessions exist in recruiter demo mode." });
+    }
 
     // Validate CSRF with cryptographic signature bound to session
     const csrfHeader = request.headers.get("x-csrf-token");
