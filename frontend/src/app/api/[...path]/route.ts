@@ -90,7 +90,16 @@ async function handle(request: NextRequest, context: RouteContext) {
   const { path } = await context.params;
   const joined = path.join("/");
   const demo = request.cookies.get("demo_session")?.value === "1";
-  if (demo) return demoResponse(joined, request);
+  if (demo) {
+    const isSafeDemoPost = request.method === "POST" && joined.startsWith("reports/generate");
+    if (request.method !== "GET" && !isSafeDemoPost) {
+      return NextResponse.json({ detail: "Recruiter demo is read-only." }, { status: 403 });
+    }
+    if (joined === "v1/system/stream/telemetry") {
+      return new NextResponse(null, { status: 204 });
+    }
+    return demoResponse(joined, request);
+  }
   return proxy(request, joined);
 }
 
