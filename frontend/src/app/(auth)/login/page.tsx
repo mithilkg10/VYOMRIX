@@ -50,9 +50,12 @@ export default function LoginPage() {
       <div className="mt-6 rounded-xl border border-border bg-background/40 p-4 text-sm">
         <p className="font-medium">Recruiter Demo</p>
         <p className="mt-1 text-muted-foreground">Open a read-only SOC view using sanitized synthetic data. No password is required.</p>
-        <Button asChild type="button" variant="outline" className="mt-3">
-          <Link href="/demo">Open Recruiter Demo</Link>
-        </Button>
+        <Link
+          href="/demo"
+          className="mt-3 inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+        >
+          Open Recruiter Demo
+        </Link>
       </div>
       <div className="mt-6 flex items-center gap-2 border-t border-border pt-4 text-xs text-muted-foreground"><LockKeyhole className="h-3.5 w-3.5 text-success" /> Session cookies are protected and scoped to this platform.</div>
     </div>
