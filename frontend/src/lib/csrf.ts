@@ -1,11 +1,17 @@
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 
-const CSRF_SECRET = process.env.CSRF_SECRET || "default_dev_secret_change_me_in_prod";
+function getCsrfSecret(): string {
+  const secret = process.env.CSRF_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error("CSRF_SECRET must be configured with at least 32 characters");
+  }
+  return secret;
+}
 
 export function generateCsrfToken(sessionId: string): string {
   // sessionId is typically the refresh token
   const nonce = randomBytes(16).toString('hex');
-  const hmac = createHmac('sha256', CSRF_SECRET);
+  const hmac = createHmac('sha256', getCsrfSecret());
   hmac.update(`${nonce}:${sessionId}`);
   const signature = hmac.digest('hex');
   return `${nonce}.${signature}`;
@@ -18,7 +24,7 @@ export function validateCsrfToken(token: string, sessionId: string): boolean {
   if (parts.length !== 2) return false;
   
   const [nonce, signature] = parts;
-  const hmac = createHmac('sha256', CSRF_SECRET);
+  const hmac = createHmac('sha256', getCsrfSecret());
   hmac.update(`${nonce}:${sessionId}`);
   const expectedSignature = hmac.digest('hex');
   
