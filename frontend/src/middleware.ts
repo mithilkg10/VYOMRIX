@@ -21,13 +21,14 @@ export function middleware(request: NextRequest) {
   const isAuthPage = request.nextUrl.pathname.startsWith("/login") || 
                      request.nextUrl.pathname.startsWith("/forgot-password") || 
                      request.nextUrl.pathname.startsWith("/reset-password");
+  const isPublicDemo = request.nextUrl.pathname === "/demo";
   
   const hasValidAccess = accessToken && !tokenHasExpired(accessToken);
   const hasRefresh = !!refreshToken;
   
   let response: NextResponse;
   
-  if (!hasValidAccess && !hasRefresh && !isAuthPage) {
+  if (!hasValidAccess && !hasRefresh && !isAuthPage && !isPublicDemo) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("from", request.nextUrl.pathname);
     response = NextResponse.redirect(loginUrl);
