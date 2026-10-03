@@ -17,7 +17,7 @@ async def generate_report(
     req: ReportRequest,
     format: str = "pdf",
     db: AsyncSession = Depends(get_db),
-    current_user: UserModel = Depends(RequirePermissions([PermissionsEnum.REPORTS_READ]))
+    current_user: UserModel = Depends(RequirePermissions([PermissionsEnum.REPORTS_GENERATE]))
 ):
     try:
         if format.lower() == "html":

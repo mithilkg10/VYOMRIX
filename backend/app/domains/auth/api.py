@@ -103,10 +103,18 @@ async def refresh_access_token(
     
     store = await get_security_store()
     
-    if session_data.get("is_grace") and store:
-        cached = await store.get(f"grace_token:{jti}")
-        if cached:
-            return json.loads(cached)
+    if session_data.get("is_grace"):
+        if not store:
+            raise HTTPException(status_code=503, detail="Session store unavailable")
+        # The first request commits the successor before it caches the response.
+        # Wait briefly so concurrent retries receive the same encoded tokens.
+        import asyncio
+        for _ in range(20):
+            cached = await store.get(f"grace_token:{jti}")
+            if cached:
+                return json.loads(cached)
+            await asyncio.sleep(0.05)
+        raise HTTPException(status_code=503, detail="Refresh response unavailable; retry")
 
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = auth_service.create_access_token(

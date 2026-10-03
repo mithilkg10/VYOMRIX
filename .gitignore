@@ -19,6 +19,7 @@ backend/*.db-wal
 
 node_modules/
 frontend/node_modules/
+frontend/backend/
 .next/
 frontend/.next/
 dist/

@@ -21,7 +21,7 @@ export interface SessionResponse {
 export const authApi = {
   getCurrentUser: () => apiRequest<UserResponse>("/v1/auth/me"), // Keep as /v1 because it uses generic proxy
   login: (data: URLSearchParams) =>
-    apiRequest<any>("/auth/login", {
+    apiRequest<{ success: boolean }>("/auth/login", {
       method: "POST",
       body: data.toString(),
       headers: { "Content-Type": "application/x-www-form-urlencoded" },

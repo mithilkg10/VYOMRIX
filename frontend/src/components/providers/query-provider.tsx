@@ -26,8 +26,8 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
           queries: {
             staleTime: 60 * 1000, // 1 minute
             refetchOnWindowFocus: false,
-            retry: (failureCount, error: any) => {
-              if (error?.status === 401 || error?.status === 403 || error?.status === 404) {
+            retry: (failureCount, error: unknown) => {
+              if (error instanceof ApiError && [401, 403, 404].includes(error.status)) {
                 return false;
               }
               return failureCount < 3;

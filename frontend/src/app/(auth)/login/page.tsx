@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => { 
     event.preventDefault(); 
     setError(null); 
@@ -26,8 +27,8 @@ export default function LoginPage() {
       try {
         await authApi.login(params);
         router.push("/");
-      } catch (err: any) {
-        setError(err.message || "Invalid credentials");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Invalid credentials");
       }
     }); 
   };
@@ -36,7 +37,7 @@ export default function LoginPage() {
       <div className="mb-7 space-y-3"><div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[.16em] text-cyan-300"><ShieldCheck className="h-4 w-4" /> Secure operator access</div><h1 className="text-3xl font-semibold tracking-tight">Sign in to <span className="gradient-text">MKG SOC</span></h1><p className="text-sm leading-6 text-muted-foreground">Access the security operations workspace and its protected telemetry.</p></div>
       <form className="space-y-5" onSubmit={handleSubmit} noValidate>
         {error && <div role="alert" className="flex gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />{error}</div>}
-        <div className="space-y-2"><Label htmlFor="email">Work email</Label><Input id="email" name="email" type="email" autoComplete="email" placeholder="name@company.com" required disabled={isPending} className="h-11 bg-background/60" /></div>
+        <div className="space-y-2"><Label htmlFor="email">Work email</Label><Input id="email" name="email" type="email" autoComplete="email" placeholder="name@company.com" value={email} onChange={(event) => setEmail(event.target.value)} required disabled={isPending} className="h-11 bg-background/60" /></div>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
@@ -46,6 +47,11 @@ export default function LoginPage() {
         </div>
         <Button className="h-11 w-full bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500 font-semibold text-slate-950 hover:opacity-90" type="submit" disabled={isPending}>{isPending ? "Authenticating..." : "Sign in securely"}</Button>
       </form>
+      <div className="mt-6 rounded-xl border border-border bg-background/40 p-4 text-sm">
+        <p className="font-medium">Recruiter Demo</p>
+        <p className="mt-1 text-muted-foreground">Read-only SOC analyst access to synthetic data. Request the demo password from Mithil.</p>
+        <Button type="button" variant="outline" className="mt-3" onClick={() => setEmail("demo.analyst@mithilkg.dev")}>Use Demo Account</Button>
+      </div>
       <div className="mt-6 flex items-center gap-2 border-t border-border pt-4 text-xs text-muted-foreground"><LockKeyhole className="h-3.5 w-3.5 text-success" /> Session cookies are protected and scoped to this platform.</div>
     </div>
   </section>;

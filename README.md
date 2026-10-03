@@ -64,10 +64,18 @@ Copy the example environment files and provide your own local values.
 
 ```bash
 cp .env.example .env
-cp backend/.env.example backend/.env
+cp .env.example backend/.env
 ```
 
 Never commit real credentials, API keys, signing secrets, or production database content.
+
+### Owner and recruiter login
+
+The backend reads `ADMIN_EMAIL` and `ADMIN_PASSWORD_HASH` from its runtime environment. Use a unique private password, generate its bcrypt hash locally, and configure only the hash in the backend/deployment secrets. Startup provisions a **Super Admin** account at that email; no default administrator password is created or logged. Existing owner accounts with another email require manual review and rotation.
+
+Set `DEMO_PASSWORD` to provision `demo.analyst@mithilkg.dev`. The password must pass the application complexity policy. This account has an SOC Analyst label with read-only permissions; it cannot manage users, change detection rules, modify incidents, or generate reports. `DEMO_DATA_ONLY=true` is required and should be set only on an isolated database containing synthetic cases. Never point public demo access at private telemetry. Login is at the frontend `/login`; the Recruiter Demo button fills only the email. Share the demo password separately.
+
+For local development, put these variables in `backend/.env`. For a deployed backend, set them in its secret manager and restart. Frontend and backend deployment URLs must be configured separately; this repository does not claim a public VYOMRIX deployment.
 
 ### Start infrastructure
 

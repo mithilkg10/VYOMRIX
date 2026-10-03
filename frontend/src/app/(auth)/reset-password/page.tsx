@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import { AlertCircle, ShieldCheck, CheckCircle2, EyeOff, Eye } from "lucide-react";
 import { authApi } from "@/lib/api/auth";
@@ -19,14 +19,9 @@ function ResetPasswordForm() {
   const [success, setSuccess] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
-  useEffect(() => {
-    if (!token) {
-      setError("Invalid or missing reset token. Please request a new password reset link.");
-    }
-  }, [token]);
-
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!token) return;
     setError(null);
     setSuccess(null);
     const formData = new FormData(event.currentTarget);
@@ -40,10 +35,10 @@ function ResetPasswordForm() {
     
     startTransition(async () => {
       try {
-        const result = await authApi.resetPassword(token as string, password);
+        const result = await authApi.resetPassword(token, password);
         setSuccess(result.message);
-      } catch (err: any) {
-        setError(err.message || "An error occurred");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "An error occurred");
       }
     });
   };
@@ -74,10 +69,10 @@ function ResetPasswordForm() {
         ) : (
           <form className="space-y-5" onSubmit={handleSubmit} noValidate>
             <input type="hidden" name="token" value={token || ""} />
-            {error && (
+            {(error || (!token && "Invalid or missing reset token. Please request a new password reset link.")) && (
               <div role="alert" className="flex gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                {error}
+                {error || "Invalid or missing reset token. Please request a new password reset link."}
               </div>
             )}
             

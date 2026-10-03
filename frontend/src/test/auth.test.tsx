@@ -29,7 +29,7 @@ describe('authApi module', () => {
     data.append('password', 'password123')
 
     await authApi.login(data)
-    expect(apiRequest).toHaveBeenCalledWith('/v1/auth/login', {
+    expect(apiRequest).toHaveBeenCalledWith('/auth/login', {
       method: 'POST',
       body: data.toString(),
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

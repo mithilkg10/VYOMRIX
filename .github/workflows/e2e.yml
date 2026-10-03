@@ -18,7 +18,7 @@ jobs:
         image: postgres:15-alpine
         env:
           POSTGRES_USER: vyomrix
-          POSTGRES_PASSWORD: testpassword
+          POSTGRES_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
           POSTGRES_DB: vyomrix_test
         ports:
           - 5432:5432
@@ -73,12 +73,13 @@ jobs:
         working-directory: ./backend
         env:
           POSTGRES_USER: vyomrix
-          POSTGRES_PASSWORD: testpassword
+          POSTGRES_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
           POSTGRES_SERVER: localhost
           POSTGRES_PORT: '5432'
           POSTGRES_DB: vyomrix_test
           REDIS_HOST: localhost
-          SECRET_KEY: test_secret_key_12345
+          SECRET_KEY: ${{ github.sha }}-${{ github.run_id }}-auth
+          CSRF_SECRET: ${{ github.sha }}-${{ github.run_id }}-csrf
         run: |
           alembic upgrade head
 
@@ -86,12 +87,13 @@ jobs:
         working-directory: ./backend
         env:
           POSTGRES_USER: vyomrix
-          POSTGRES_PASSWORD: testpassword
+          POSTGRES_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
           POSTGRES_SERVER: localhost
           POSTGRES_PORT: '5432'
           POSTGRES_DB: vyomrix_test
           REDIS_HOST: localhost
-          SECRET_KEY: test_secret_key_12345
+          SECRET_KEY: ${{ github.sha }}-${{ github.run_id }}-auth
+          CSRF_SECRET: ${{ github.sha }}-${{ github.run_id }}-csrf
           PYTHONPATH: .
         run: |
           pytest tests/ -v --cov=app
@@ -100,12 +102,13 @@ jobs:
         working-directory: ./backend
         env:
           POSTGRES_USER: vyomrix
-          POSTGRES_PASSWORD: testpassword
+          POSTGRES_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
           POSTGRES_SERVER: localhost
           POSTGRES_PORT: '5432'
           POSTGRES_DB: vyomrix_test
           REDIS_HOST: localhost
-          SECRET_KEY: test_secret_key_12345
+          SECRET_KEY: ${{ github.sha }}-${{ github.run_id }}-auth
+          CSRF_SECRET: ${{ github.sha }}-${{ github.run_id }}-csrf
         run: |
           uvicorn app.main:app --host 127.0.0.1 --port 8000 &
           sleep 5

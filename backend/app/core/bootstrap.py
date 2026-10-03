@@ -1,67 +1,76 @@
 import logging
 import uuid
-import secrets
-import string
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import AsyncSessionLocal
 from app.domains.auth.models import UserModel
 from app.core.config import settings
-from passlib.context import CryptContext
-
 logger = logging.getLogger(__name__)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from app.domains.auth.permissions import PermissionsEnum, RoleEnum
+from app.domains.auth.services import AuthService, pwd_context
 
-def generate_secure_password(length=16):
-    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
-    while True:
-        password = ''.join(secrets.choice(alphabet) for _ in range(length))
-        if (any(c.islower() for c in password)
-            and any(c.isupper() for c in password)
-            and sum(c.isdigit() for c in password) >= 3):
-            break
-    return password
+auth_service = AuthService()
 
 async def bootstrap_system():
-    """Initializes the database with an admin user and core permissions if empty."""
+    """Provision only explicitly configured owner and read-only demo accounts."""
     async with AsyncSessionLocal() as session:
-        # Check if any users exist
-        stmt = select(UserModel).limit(1)
-        result = await session.execute(stmt)
-        if result.scalars().first():
-            logger.info("Users already exist. Skipping bootstrap.")
-            return
-
-        # No users exist, create initial admin
-        email = settings.VYOMRIX_DEV_ADMIN_EMAIL or "admin@vyomrix.local"
-        
-        if settings.VYOMRIX_RUNTIME == "production":
-            password = generate_secure_password()
-            logger.warning("*" * 60)
-            logger.warning("INITIAL PRODUCTION ADMIN CREATED")
-            logger.warning(f"Email: {email}")
-            logger.warning(f"Password: {password}")
-            logger.warning("PLEASE SAVE THIS PASSWORD SECURELY AND CHANGE IT UPON LOGIN")
-            logger.warning("*" * 60)
+        if settings.ADMIN_EMAIL and settings.ADMIN_PASSWORD_HASH:
+            if not pwd_context.identify(settings.ADMIN_PASSWORD_HASH):
+                raise ValueError("ADMIN_PASSWORD_HASH must be a supported password hash")
+            existing = await session.scalar(select(UserModel).where(UserModel.email == settings.ADMIN_EMAIL))
+            if not existing:
+                session.add(UserModel(
+                    id=str(uuid.uuid4()), email=settings.ADMIN_EMAIL,
+                    hashed_password=settings.ADMIN_PASSWORD_HASH,
+                    full_name="System Administrator", is_active=True,
+                    role=RoleEnum.SUPER_ADMIN.value,
+                    permissions=[PermissionsEnum.ADMIN_ALL.value],
+                ))
+                await session.commit()
+                logger.info("Configured owner account created.")
+            elif existing.role != RoleEnum.SUPER_ADMIN.value:
+                raise ValueError("ADMIN_EMAIL already belongs to a non-admin account")
+            else:
+                existing.hashed_password = settings.ADMIN_PASSWORD_HASH
+                existing.permissions = [PermissionsEnum.ADMIN_ALL.value]
+                existing.is_active = True
+                await session.commit()
+                logger.info("Configured owner account updated.")
+        elif settings.ADMIN_EMAIL or settings.ADMIN_PASSWORD_HASH:
+            raise ValueError("Set both ADMIN_EMAIL and ADMIN_PASSWORD_HASH")
         else:
-            password = settings.VYOMRIX_DEV_ADMIN_PASSWORD or "VyomrixAdmin123!"
-            logger.info(f"Created local development admin: {email} / {password}")
+            logger.warning("No owner account configured; set ADMIN_EMAIL and ADMIN_PASSWORD_HASH.")
 
-        hashed_password = pwd_context.hash(password)
-        
-        admin_user = UserModel(
-            id=str(uuid.uuid4()),
-            email=email,
-            hashed_password=hashed_password,
-            full_name="System Administrator",
-            is_active=True,
-            role="Super Admin",
-            permissions=["ADMIN_ALL"]
-        )
-        
-        session.add(admin_user)
-        try:
-            await session.commit()
-        except Exception as e:
-            logger.error(f"Failed to bootstrap initial admin: {e}")
-            await session.rollback()
+        if settings.DEMO_PASSWORD:
+            if not settings.DEMO_DATA_ONLY:
+                raise ValueError("DEMO_DATA_ONLY=true is required before provisioning a demo account")
+            auth_service.validate_password_complexity(settings.DEMO_PASSWORD)
+            if settings.ADMIN_PASSWORD_HASH and auth_service.verify_password(settings.DEMO_PASSWORD, settings.ADMIN_PASSWORD_HASH):
+                raise ValueError("Owner and demo passwords must differ")
+            demo_email = "demo.analyst@mithilkg.dev"
+            read_permissions = [
+                PermissionsEnum.INCIDENTS_READ, PermissionsEnum.ASSETS_READ,
+                PermissionsEnum.SIEM_READ, PermissionsEnum.RULES_READ,
+                PermissionsEnum.THREAT_INTEL_READ, PermissionsEnum.MITRE_READ,
+                PermissionsEnum.AI_SOC_READ, PermissionsEnum.WAF_READ,
+                PermissionsEnum.DECEPTION_READ, PermissionsEnum.HUNTING_READ,
+                PermissionsEnum.PHISHING_READ, PermissionsEnum.REPORTS_READ,
+                PermissionsEnum.NOTIFICATIONS_READ,
+            ]
+            existing = await session.scalar(select(UserModel).where(UserModel.email == demo_email))
+            if not existing:
+                session.add(UserModel(
+                    id=str(uuid.uuid4()), email=demo_email,
+                    hashed_password=auth_service.get_password_hash(settings.DEMO_PASSWORD),
+                    full_name="Recruiter SOC Demo", is_active=True,
+                    role=RoleEnum.SOC_ANALYST.value,
+                    permissions=[permission.value for permission in read_permissions],
+                ))
+                await session.commit()
+                logger.info("Read-only analyst demo account created.")
+            else:
+                existing.hashed_password = auth_service.get_password_hash(settings.DEMO_PASSWORD)
+                existing.role = RoleEnum.SOC_ANALYST.value
+                existing.permissions = [permission.value for permission in read_permissions]
+                existing.is_active = True
+                await session.commit()

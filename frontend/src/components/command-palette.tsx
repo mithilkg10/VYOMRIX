@@ -81,7 +81,7 @@ export function CommandPalette() {
           
           {data?.results.length === 0 && !isLoading && (
             <div className="p-4 text-center text-sm text-muted-foreground">
-              No results found for "{debouncedQuery}"
+              No results found for &quot;{debouncedQuery}&quot;
             </div>
           )}
 

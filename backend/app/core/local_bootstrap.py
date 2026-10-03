@@ -14,30 +14,8 @@ def run_migrations():
     command.upgrade(alembic_cfg, "head")
 
 async def main_async():
-    print("Initializing mock data...")
-    from app.core.database import AsyncSessionLocal
-    from app.domains.auth.models import UserModel
-    from app.core.security import get_password_hash
-    from sqlalchemy import select
-    
-    async with AsyncSessionLocal() as session:
-        # Check if admin exists
-        result = await session.execute(select(UserModel).where(UserModel.email == "admin@vyomrix.com"))
-        admin_user = result.scalars().first()
-        
-        if not admin_user:
-            admin_user = UserModel(
-                id="usr_admin_mock",
-                email="admin@vyomrix.com",
-                hashed_password=get_password_hash("admin123"),
-                full_name="Local Admin",
-                is_active=True,
-                role="admin",
-                permissions=["*"]
-            )
-            session.add(admin_user)
-            await session.commit()
-            print("Created local admin user (admin@vyomrix.com / admin123)")
+    from app.core.bootstrap import bootstrap_system
+    await bootstrap_system()
 
 def main():
     if settings.VYOMRIX_RUNTIME != "local":

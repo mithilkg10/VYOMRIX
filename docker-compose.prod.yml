@@ -131,7 +131,7 @@ services:
     - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:?set ALLOWED_ORIGINS}
     - VYOMRIX_RUNTIME=production
     - ENVIRONMENT=production
-    - CSRF_SECRET=
+    - CSRF_SECRET=${CSRF_SECRET:?set CSRF_SECRET}
     - VYOMRIX_SANDBOX=false
     depends_on:
       migration:
@@ -183,7 +183,7 @@ services:
     - SECRET_KEY=${SECRET_KEY:?set SECRET_KEY}
     - VYOMRIX_RUNTIME=production
     - ENVIRONMENT=production
-    - CSRF_SECRET=
+    - CSRF_SECRET=${CSRF_SECRET:?set CSRF_SECRET}
     - VYOMRIX_SANDBOX=false
     depends_on:
       migration:
@@ -218,7 +218,7 @@ services:
         condition: service_healthy
     environment:
     - BACKEND_API_URL=http://backend:8000
-    - CSRF_SECRET=
+    - CSRF_SECRET=${CSRF_SECRET:?set CSRF_SECRET}
     - NODE_ENV=production
     networks:
     - vyomrix-public

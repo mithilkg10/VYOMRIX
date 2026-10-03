@@ -22,8 +22,8 @@ export default function ForgotPasswordPage() {
       try {
         const result = await authApi.forgotPassword(formData.get("email") as string);
         setSuccess(result.message);
-      } catch (err: any) {
-        setError(err.message || "An error occurred");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "An error occurred");
       }
     });
   };

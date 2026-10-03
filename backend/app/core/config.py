@@ -14,19 +14,21 @@ class Settings(BaseSettings):
     VYOMRIX_SANDBOX: bool = False
     REPORTS_DIR: str = "/app/data/reports"
     
-    # Development Admin (Local Only)
-    VYOMRIX_DEV_ADMIN_EMAIL: Optional[str] = None
-    VYOMRIX_DEV_ADMIN_PASSWORD: Optional[str] = None
+    # Explicit owner and isolated demo accounts
+    ADMIN_EMAIL: Optional[str] = None
+    ADMIN_PASSWORD_HASH: Optional[str] = None
+    DEMO_PASSWORD: Optional[str] = None
+    DEMO_DATA_ONLY: bool = False
     
     # Security
-    SECRET_KEY: str = "development-only-secret-change-before-production"
-    CSRF_SECRET: str = "development-only-csrf-change-before-production"
+    SECRET_KEY: str = ""
+    CSRF_SECRET: str = ""
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     
     # Postgres
     POSTGRES_USER: str = "vyomrix"
-    POSTGRES_PASSWORD: str = "vyomrix_secret"
+    POSTGRES_PASSWORD: str = ""
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_PORT: str = "5433"
     POSTGRES_DB: str = "vyomrix"
@@ -38,7 +40,7 @@ class Settings(BaseSettings):
     
     # RabbitMQ
     RABBITMQ_USER: str = "guest"
-    RABBITMQ_PASS: str = "guest"
+    RABBITMQ_PASS: str = ""
     RABBITMQ_HOST: str = "localhost"
     RABBITMQ_PORT: int = 5672
     
@@ -78,25 +80,21 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_security(self):
+        if len(self.SECRET_KEY) < 32 or len(self.CSRF_SECRET) < 32:
+            raise ValueError("Set unique SECRET_KEY and CSRF_SECRET values of at least 32 characters.")
+        if self.SECRET_KEY == self.CSRF_SECRET:
+            raise ValueError("SECRET_KEY and CSRF_SECRET must differ.")
         if self.ENVIRONMENT.lower() == "production":
             if self.VYOMRIX_RUNTIME != "production":
                 raise ValueError("VYOMRIX_RUNTIME must be 'production' when ENVIRONMENT is 'production'.")
             if self.VYOMRIX_SANDBOX is not False:
                 raise ValueError("VYOMRIX_SANDBOX must be false in production.")
-            if self.SECRET_KEY == "development-only-secret-change-before-production" or len(self.SECRET_KEY) < 32:
-                raise ValueError("Production requires a unique SECRET_KEY of at least 32 characters.")
-            if self.CSRF_SECRET == "development-only-csrf-change-before-production" or len(self.CSRF_SECRET) < 32:
-                raise ValueError("Production requires a unique CSRF_SECRET of at least 32 characters.")
-            if self.SECRET_KEY == self.CSRF_SECRET:
-                raise ValueError("SECRET_KEY and CSRF_SECRET must not be the same.")
             if "localhost" in self.ALLOWED_ORIGINS or "127.0.0.1" in self.ALLOWED_ORIGINS:
                 raise ValueError("ALLOWED_ORIGINS must not contain localhost in production.")
-            if self.POSTGRES_PASSWORD == "vyomrix_secret":
+            if not self.POSTGRES_PASSWORD:
                 raise ValueError("Production requires a secure POSTGRES_PASSWORD.")
-            if self.RABBITMQ_PASS == "guest":
+            if not self.RABBITMQ_PASS or self.RABBITMQ_PASS == "guest":
                 raise ValueError("Production requires a secure RABBITMQ_PASS.")
-            if self.VYOMRIX_DEV_ADMIN_EMAIL or self.VYOMRIX_DEV_ADMIN_PASSWORD:
-                raise ValueError("Development administrator seeding is forbidden in production.")
         return self
 
     @property
