@@ -55,7 +55,13 @@ function demoResponse(path: string, request: NextRequest) {
     return NextResponse.json({ report_id: "RPT-DEMO-001", incident_id: "INC-001", format, download_url: "/demo#reports" });
   }
   if (path.startsWith("v1/search")) {
-    return NextResponse.json({ query: new URL(request.url).searchParams.get("q") ?? "", items: [] });
+    const query = (new URL(request.url).searchParams.get("q") ?? "").toLowerCase();
+    const results = [
+      ...demoIncidents.map((item) => ({ id: item.id, type: "incident" as const, title: item.title, subtitle: item.severity, url: "/incidents" })),
+      ...demoAssets.map((item) => ({ id: item.id, type: "asset" as const, title: item.hostname, subtitle: item.asset_type, url: "/assets" })),
+      ...demoRules.map((item) => ({ id: item.id, type: "rule" as const, title: item.title, subtitle: item.level, url: "/detection" })),
+    ].filter((item) => !query || item.title.toLowerCase().includes(query) || item.id.toLowerCase().includes(query));
+    return NextResponse.json({ results: results.slice(0, 10), total: results.length });
   }
   return NextResponse.json({ detail: "This demo endpoint is not implemented." }, { status: 404 });
 }
@@ -68,7 +74,8 @@ async function proxy(request: NextRequest, path: string) {
     return NextResponse.json({ detail: "Backend is not configured for this deployment." }, { status: 503 });
   }
 
-  const target = new URL(`${base}/api/v1/${path}`);
+  const backendPath = path.startsWith("v1/") ? path.slice(3) : path;
+  const target = new URL(`${base}/api/v1/${backendPath}`);
   const sourceUrl = new URL(request.url);
   target.search = sourceUrl.search;
 
