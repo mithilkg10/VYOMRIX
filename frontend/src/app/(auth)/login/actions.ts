@@ -18,5 +18,6 @@ export async function logoutAction() {
   }
 
   await clearAuthCookiesAction();
+  cookieStore.delete("demo_session");
   redirect("/login");
 }
