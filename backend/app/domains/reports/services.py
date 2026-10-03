@@ -31,7 +31,7 @@ class ProductionSharedStorage(ReportStorageInterface):
     # In production, we assume a persistent shared volume mounted at /app/data/reports
     # This could easily be swapped out for S3 using boto3
     def __init__(self):
-        self.reports_dir = "/app/data/reports"
+        self.reports_dir = settings.REPORTS_DIR
         os.makedirs(self.reports_dir, exist_ok=True)
         
     def save(self, filename: str, content: bytes) -> str:

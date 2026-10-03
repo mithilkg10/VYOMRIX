@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     # Runtime Configuration
     VYOMRIX_RUNTIME: str = "production"  # 'production' or 'local'
     VYOMRIX_SANDBOX: bool = False
+    REPORTS_DIR: str = "/app/data/reports"
     
     # Development Admin (Local Only)
     VYOMRIX_DEV_ADMIN_EMAIL: Optional[str] = None
