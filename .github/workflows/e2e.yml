@@ -11,7 +11,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      REPORTS_DIR: ${{ runner.temp }}/vyomrix-reports
+      REPORTS_DIR: /tmp/vyomrix-reports
     
     services:
       postgres:
