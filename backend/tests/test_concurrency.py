@@ -108,7 +108,7 @@ async def test_concurrent_api_refresh(db_session, setup_test_user):
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
         async def make_request():
-            return await client.post("/api/v1/auth/refresh", params={"refresh_token": refresh_token})
+            return await client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
             
         results = await asyncio.gather(*[make_request() for _ in range(5)], return_exceptions=True)
         
