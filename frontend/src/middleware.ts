@@ -25,17 +25,18 @@ export function middleware(request: NextRequest) {
   
   const hasValidAccess = accessToken && !tokenHasExpired(accessToken);
   const hasRefresh = !!refreshToken;
+  const hasDemoSession = request.cookies.get("demo_session")?.value === "1";
   
   let response: NextResponse;
   
-  if (!hasValidAccess && !hasRefresh && !isAuthPage && !isPublicDemo) {
+  if (!hasValidAccess && !hasRefresh && !hasDemoSession && !isAuthPage && !isPublicDemo) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("from", request.nextUrl.pathname);
     response = NextResponse.redirect(loginUrl);
     if (accessToken) {
       response.cookies.delete("access_token");
     }
-  } else if (hasValidAccess && isAuthPage) {
+  } else if ((hasValidAccess || hasDemoSession) && isAuthPage) {
     response = NextResponse.redirect(new URL("/", request.url));
   } else {
     response = NextResponse.next();
