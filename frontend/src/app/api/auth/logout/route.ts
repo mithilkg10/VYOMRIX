@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { getBackendApiUrl } from "@/lib/api/config";
 import { clearAuthCookies } from "@/lib/api/cookies";
 import { validateCsrfToken } from "@/lib/csrf";
+import { revokeCurrentSession } from "@/lib/api/revoke-session";
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,30 +17,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ detail: "CSRF token mismatch or invalid signature" }, { status: 403 });
     }
 
-    if (!accessToken) {
-      return NextResponse.json({ detail: "Not authenticated" }, { status: 401 });
-    }
-
     const targetSessionId = cookieStore.get("session_id")?.value;
-    if (!targetSessionId) {
-      const response = NextResponse.json({ detail: "Missing session ID" }, { status: 400 });
-      clearAuthCookies(response);
-      return response;
-    }
-    const targetUrl = `${getBackendApiUrl()}/api/v1/auth/logout?session_id=${encodeURIComponent(targetSessionId)}`;
-
-    const backendResponse = await fetch(targetUrl, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${accessToken}`
-      },
-      cache: "no-store",
-    });
-
-    const data = await backendResponse.json();
-
-    const response = NextResponse.json(data, { status: backendResponse.status });
+    const backendResponse = await revokeCurrentSession(accessToken, refreshToken, targetSessionId);
+    const data = backendResponse ? await backendResponse.json() : { detail: "Not authenticated" };
+    const response = NextResponse.json(data, { status: backendResponse?.status ?? 401 });
 
     clearAuthCookies(response);
     
