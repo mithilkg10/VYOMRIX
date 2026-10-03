@@ -19,9 +19,17 @@ export default function LoginPage() {
     event.preventDefault(); 
     setError(null); 
     const formData = new FormData(event.currentTarget); 
+    const submittedEmail = String(formData.get("email") ?? "");
+    const submittedPassword = String(formData.get("password") ?? "");
+
+    if (submittedEmail === "demo.analyst@mithilkg.dev" && submittedPassword === "VyomrixDemo#2026!") {
+      router.push("/demo");
+      return;
+    }
+
     const params = new URLSearchParams();
-    params.append("email", formData.get("email") as string);
-    params.append("password", formData.get("password") as string);
+    params.append("email", submittedEmail);
+    params.append("password", submittedPassword);
     
     startTransition(async () => { 
       try {
@@ -49,7 +57,7 @@ export default function LoginPage() {
       </form>
       <div className="mt-6 rounded-xl border border-border bg-background/40 p-4 text-sm">
         <p className="font-medium">Recruiter Demo</p>
-        <p className="mt-1 text-muted-foreground">Open a read-only SOC view using sanitized synthetic data. No password is required.</p>
+        <p className="mt-1 text-muted-foreground">Read-only synthetic SOC access. Email: demo.analyst@mithilkg.dev · Password: VyomrixDemo#2026!</p>
         <Link
           href="/demo"
           className="mt-3 inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
