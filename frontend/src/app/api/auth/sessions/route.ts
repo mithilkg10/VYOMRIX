@@ -6,6 +6,18 @@ export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("access_token")?.value;
+    const demoSession = cookieStore.get("demo_session")?.value === "1";
+
+    if (demoSession) {
+      return NextResponse.json([{
+        id: "demo-session",
+        user_agent: request.headers.get("user-agent") ?? "Recruiter Demo Browser",
+        ip_address: "Synthetic / hidden",
+        created_at: "2026-10-03T15:00:00Z",
+        last_used_at: new Date().toISOString(),
+        is_current: true
+      }]);
+    }
 
     if (!accessToken) {
       return NextResponse.json({ detail: "Not authenticated" }, { status: 401 });
