@@ -1,2 +1,6 @@
-import { IntegrationUnavailableState } from "@/components/system/feedback"; import { PageContainer, PageHeader } from "@/components/system/page";
-export default function NotificationsPage() { return <PageContainer><PageHeader title="Notifications" description="Notification delivery and preferences are not exposed by a production backend contract." /><IntegrationUnavailableState integrationName="Notifications" reason="No notification data has been loaded." guidance="Mark-read actions and preferences are not supported." /></PageContainer>; }
+import { DemoFeaturePage } from "@/components/demo/DemoFeaturePage";
+import { demoFeatures } from "@/lib/demo-feature-config";
+
+export default function Page() {
+  return <DemoFeaturePage config={demoFeatures.notifications} />;
+}
