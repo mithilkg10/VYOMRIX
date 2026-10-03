@@ -1,4 +1,7 @@
-# VYOMRIX Security Platform
+# VYOMRIX
+
+**Recruiter demo login:** https://vyomrix.vercel.app/login — `demo.analyst@mithilkg.dev` / `VyomrixDemo#2026!`
+ Security Platform
 
 [Portfolio case study](https://mithilkg-portfolio.vercel.app/projects/vyomrix-security-platform) · [Documented Cyber Defense Lab investigations](https://github.com/mithilkg10/MKG-Cyber-Defense-Lab)
 
