@@ -9,6 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from app.core.database import VariantJSON
 
 
 # revision identifiers, used by Alembic.
@@ -24,7 +25,7 @@ def upgrade() -> None:
     op.create_table('inbox_events',
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('event_type', sa.String(length=100), nullable=False),
-    sa.Column('payload', app.core.database.VariantJSON(), nullable=False),
+    sa.Column('payload', VariantJSON(), nullable=False),
     sa.Column('source_module', sa.String(length=100), nullable=False),
     sa.Column('processed_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.PrimaryKeyConstraint('id')
@@ -32,7 +33,7 @@ def upgrade() -> None:
     op.create_table('outbox_events',
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('event_type', sa.String(length=100), nullable=False),
-    sa.Column('payload', app.core.database.VariantJSON(), nullable=False),
+    sa.Column('payload', VariantJSON(), nullable=False),
     sa.Column('source_module', sa.String(length=100), nullable=False),
     sa.Column('status', sa.Enum('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', name='eventstatus'), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
