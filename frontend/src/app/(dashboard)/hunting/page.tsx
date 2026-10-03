@@ -1,5 +1,6 @@
-import { UnderDevelopment } from "@/components/ui/under-development";
+import { DemoFeaturePage } from "@/components/demo/DemoFeaturePage";
+import { demoFeatures } from "@/lib/demo-feature-config";
 
-export default function ThreatHuntingPage() {
-  return <UnderDevelopment title="Threat Hunting" description="Guide proactive investigations across endpoint, network, and identity telemetry using reusable hunt hypotheses." plannedCapabilities={["Hypothesis-driven hunt workspaces", "Cross-source query and evidence collection", "Saved hunts and collaboration workflows"]} />;
+export default function Page() {
+  return <DemoFeaturePage config={demoFeatures.hunting} />;
 }
