@@ -60,7 +60,7 @@ export default function LoginPage() {
         <p className="font-medium">Recruiter Demo</p>
         <p className="mt-1 text-muted-foreground">Read-only synthetic SOC access. Email: demo.analyst@mithilkg.dev · Password: VyomrixDemo#2026!</p>
         <Link
-          href="/demo"
+          href="/demo-login"
           className="mt-3 inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
         >
           Open Recruiter Demo
