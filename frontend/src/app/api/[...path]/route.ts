@@ -49,10 +49,20 @@ function demoResponse(path: string, request: NextRequest) {
       cwe: null,
     });
   }
+  if (path === "reports/demo-report") {
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>VYOMRIX Demo Incident Report</title></head><body><h1>VYOMRIX Demo Incident Report</h1><p><strong>Incident:</strong> INC-001 Authentication anomaly</p><p><strong>Status:</strong> Open</p><p><strong>Severity:</strong> High</p><p><strong>Summary:</strong> Repeated failed-logon activity was correlated in the synthetic lab and retained for analyst review.</p><p><strong>Evidence:</strong> Windows Security telemetry, Wazuh correlation, linked endpoint win-endpoint-01.</p><p><strong>MITRE context:</strong> Valid Accounts / credential-related behavior.</p><p>This is synthetic recruiter-demo data.</p></body></html>`;
+    return new NextResponse(html, {
+      status: 200,
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+        "content-disposition": "attachment; filename=vyomrix-demo-incident-report.html",
+      },
+    });
+  }
   if (path.startsWith("reports/generate")) {
     const url = new URL(request.url);
     const format = url.searchParams.get("format") === "html" ? "html" : "pdf";
-    return NextResponse.json({ report_id: "RPT-DEMO-001", incident_id: "INC-001", format, download_url: "/demo#reports" });
+    return NextResponse.json({ report_id: "RPT-DEMO-001", incident_id: "INC-001", format, download_url: "/api/v1/reports/demo-report" });
   }
   if (path.startsWith("v1/search")) {
     const query = (new URL(request.url).searchParams.get("q") ?? "").toLowerCase();
@@ -102,7 +112,7 @@ async function handle(request: NextRequest, context: RouteContext) {
     if (request.method !== "GET" && !isSafeDemoPost) {
       return NextResponse.json({ detail: "Recruiter demo is read-only." }, { status: 403 });
     }
-    if (joined === "v1/system/stream/telemetry") {
+    if (joined === "v1/system/stream/telemetry" || joined === "v1/incidents/stream/updates") {
       return new NextResponse(null, { status: 204 });
     }
     return demoResponse(joined, request);
