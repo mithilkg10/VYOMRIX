@@ -15,12 +15,17 @@ _DEPLOYMENT_DEFAULTS = {
     "REDIS_PORT": "6379",
     "RABBITMQ_PORT": "5672",
     "WAZUH_VERIFY_TLS": "false",
-    "SECRET_KEY": "vyomrix-vercel-showcase-jwt-secret-change-for-production",
-    "CSRF_SECRET": "vyomrix-vercel-showcase-csrf-secret-change-for-production",
 }
 for key, value in _DEPLOYMENT_DEFAULTS.items():
     if not os.environ.get(key):
         os.environ[key] = value
+
+# Never ship known signing secrets. If this legacy showcase dispatcher is invoked
+# directly without configured secrets, use process-local ephemeral values only.
+if not os.environ.get("SECRET_KEY"):
+    os.environ["SECRET_KEY"] = secrets.token_urlsafe(48)
+if not os.environ.get("CSRF_SECRET"):
+    os.environ["CSRF_SECRET"] = secrets.token_urlsafe(48)
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1] / "backend"
 if str(BACKEND_ROOT) not in sys.path:
@@ -117,36 +122,3 @@ async def backend_dispatch(request: Request) -> Response:
         if key != "backend_path"
     ]
     body = await request.body()
-
-    transport = httpx.ASGITransport(app=backend_app)
-    try:
-        async with httpx.AsyncClient(
-            transport=transport,
-            base_url="http://vyomrix-backend",
-            follow_redirects=True,
-            timeout=30.0,
-        ) as client:
-            upstream = await client.request(
-                request.method,
-                backend_path,
-                params=forwarded_params,
-                headers=headers,
-                content=body,
-            )
-    except Exception as exc:
-        print(f"Vyomrix backend request failed: {exc!r}")
-        return JSONResponse(
-            {"detail": "Backend request failed", "type": type(exc).__name__},
-            status_code=502,
-        )
-
-    response_headers = {"Cache-Control": "no-store"}
-    for key in ("content-type", "content-disposition"):
-        if key in upstream.headers:
-            response_headers[key] = upstream.headers[key]
-
-    return Response(
-        content=upstream.content,
-        status_code=upstream.status_code,
-        headers=response_headers,
-    )
