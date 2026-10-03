@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       REPORTS_DIR: /tmp/vyomrix-reports
+      RABBITMQ_USER: vyomrix_ci
+      RABBITMQ_PASS: ${{ github.run_id }}-${{ github.run_attempt }}
     
     services:
       postgres:
@@ -37,6 +39,19 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
+      rabbitmq:
+        image: rabbitmq:3-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: vyomrix_ci
+          RABBITMQ_DEFAULT_PASS: ${{ github.run_id }}-${{ github.run_attempt }}
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 8
 
     steps:
       - uses: actions/checkout@v4
@@ -120,19 +135,6 @@ jobs:
         run: |
           pytest tests/ -v --cov=app
 
-      - name: Start Backend Server
-        working-directory: ./backend
-        env:
-          POSTGRES_USER: vyomrix
-          POSTGRES_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
-          POSTGRES_SERVER: localhost
-          POSTGRES_PORT: '5432'
-          POSTGRES_DB: vyomrix_test
-          REDIS_HOST: localhost
-        run: |
-          uvicorn app.main:app --host 127.0.0.1 --port 8000 &
-          sleep 5
-
       - name: Build Next.js App
         working-directory: ./frontend
         env:
@@ -142,10 +144,25 @@ jobs:
       - name: Run Playwright E2E Tests
         working-directory: ./frontend
         env:
+          POSTGRES_USER: vyomrix
+          POSTGRES_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
+          POSTGRES_SERVER: localhost
+          POSTGRES_PORT: '5432'
+          POSTGRES_DB: vyomrix_test
+          REDIS_HOST: localhost
           BACKEND_API_URL: http://127.0.0.1:8000
           NEXT_PUBLIC_API_URL: http://127.0.0.1:8000/api/v1
           PLAYWRIGHT_TEST_BASE_URL: http://localhost:3000
-        run: npm run e2e
+        run: |
+          (cd ../backend && uvicorn app.main:app --host 127.0.0.1 --port 8000) > /tmp/vyomrix-backend.log 2>&1 &
+          backend_pid=$!
+          trap 'kill $backend_pid 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:8000/api/v1/health/live > /dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:8000/api/v1/health/live > /dev/null
+          npm run e2e
 
       - name: Upload Playwright Report
         if: always()
