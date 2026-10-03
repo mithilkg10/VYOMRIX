@@ -2,91 +2,43 @@
 
 [Portfolio case study](https://mithilkg-portfolio.vercel.app/projects/vyomrix-security-platform) · [Documented Cyber Defense Lab investigations](https://github.com/mithilkg10/MKG-Cyber-Defense-Lab)
 
-**Enterprise security operations platform for XDR, SOC workflows, threat intelligence, detection engineering, deception, incident response, and AI assisted analysis.**
+**SIEM & Security Operations Platform with XDR-style detection and incident workflows.**
 
 VYOMRIX is a full stack cybersecurity engineering project built to demonstrate how multiple security operations capabilities can be brought into one coherent platform. The project combines a Next.js frontend, a FastAPI backend, PostgreSQL, Redis, background task processing, security integrations, automated tests, and end to end validation.
 
-## Why this project matters
+## Problem and current scope
 
-VYOMRIX is designed as an engineering showcase rather than a collection of disconnected dashboards. The repository demonstrates:
+Security analysts need one traceable path from SIEM telemetry to detection review, incident investigation, audit history, and reporting. VYOMRIX brings these workflows together in a full-stack engineering project.
 
-* Full stack security product architecture
-* Authentication and role based access control
-* PostgreSQL migrations and persistent application state
-* Redis backed workflows and failure handling
-* Wazuh SIEM integration
-* Threat intelligence provider integrations
-* Incident response workflows
-* Detection engineering with Sigma and YARA concepts
-* OpenCanary based deception monitoring
-* Web Application Firewall workflows
-* MITRE ATT&CK coverage views
-* AI assisted security analysis
-* Backend automated tests
-* Playwright end to end tests
-* Docker based development and deployment workflows
+The current reviewable implementation includes authenticated incident, asset, SIEM, dashboard, audit, report, MITRE, detection-rule, and health views. Wazuh and other external providers require configuration; unavailable integrations are called out in [release readiness](RELEASE_READINESS.md). The [Cyber Defense Lab](https://github.com/mithilkg10/MKG-Cyber-Defense-Lab) documents six controlled investigations using VYOMRIX as the analyst workflow.
 
 ## Architecture
 
 ```text
-Security data and integrations
-            |
-            v
-      FastAPI backend
-            |
-   +--------+--------+
-   |                 |
-   v                 v
-PostgreSQL         Redis
-   |                 |
-   +--------+--------+
-            |
-            v
-      Security services
-            |
-   +--------+--------+
-   |        |        |
-   v        v        v
- SIEM      TI      AI services
-   |        |        |
-   +--------+--------+
-            |
-            v
-      Next.js frontend
-            |
-            v
- Analyst and admin workflows
+Wazuh security telemetry (when configured)
+                 |
+                 v
+          FastAPI security services
+             /           \
+            v             v
+      PostgreSQL         Redis
+            \             /
+             v           v
+        Incident, detection, audit
+         and reporting workflows
+                 |
+                 v
+          Next.js analyst interface
 ```
 
-## Core capabilities
+PostgreSQL stores application state; Redis supports background work and failure handling. External security integrations stay behind provider boundaries. See [architecture decisions](ARCHITECTURE_DECISIONS.md) and [architecture documentation](docs/architecture/overview.md).
 
-### Security Command Centre
+## Security capabilities
 
-The platform provides a unified analyst view for security events, incidents, assets, detections, intelligence, and operational status.
-
-### SIEM integration
-
-Wazuh integration provides security event and alert workflows while preserving clear provider boundaries.
-
-### Threat intelligence
-
-The backend supports provider based intelligence lookups and separates external integrations from the core application domain.
-
-### Detection engineering
-
-The platform includes workflows for Sigma and YARA oriented detection engineering, validation, and security coverage management.
-
-### Deception
-
-OpenCanary integration provides honeypot and deception monitoring for controlled lab and development environments.
-
-### Incident response
-
-Incident handling workflows connect alerts, investigation context, response actions, status tracking, and analyst activity.
-
-### AI assisted analysis
-
-AI features are isolated behind explicit integration boundaries. Features that require external providers remain unavailable when their production configuration is absent.
+* **SIEM and telemetry:** Wazuh alert, event, and agent views when a real manager is configured.
+* **Detection and investigation:** detection-rule workflows, MITRE ATT&CK mapping views, incident timelines, and reports.
+* **Access and audit:** authentication, role-based permissions, audit records, and explicit release boundaries.
+* **Threat intelligence, AI, WAF, and deception:** provider-dependent or limited workflows; [release readiness](RELEASE_READINESS.md) identifies what is unavailable without configuration or further implementation.
 
 ## Technology
 
@@ -96,7 +48,7 @@ AI features are isolated behind explicit integration boundaries. Features that r
 * Caching and task support: Redis
 * Testing: Pytest, coverage, Playwright
 * Security integrations: Wazuh, OpenCanary, WAF tooling, threat intelligence providers
-* Deployment: Docker Compose and production deployment assets
+* Deployment: Docker Compose and deployment assets
 
 ## Local development
 
@@ -170,7 +122,7 @@ Some capabilities depend on external security products or API providers and ther
 
 * `RELEASE_READINESS.md`: supported workflows, deployment requirements, validation, and known limitations
 * `ARCHITECTURE_DECISIONS.md`: important architectural decisions and tradeoffs
-* `FEATURE_MATRIX.md`: feature status and implementation coverage
+* `FEATURE_MATRIX.md`: historical planning matrix; use release readiness for current supported scope
 * `docs/architecture/`: architecture documentation
 * `docs/domains/`: domain specific technical documentation
 
@@ -184,4 +136,6 @@ Active engineering project.
 
 The strongest areas of the repository are the security domain breadth, backend architecture, persistent infrastructure, automated testing, end to end validation, and explicit release boundaries.
 
-See `SHOWCASE.md` for a concise technical review path.
+See `SHOWCASE.md` for a concise technical review path. No public product screenshots are committed; the Cyber Defense Lab provides reviewable investigation evidence.
+
+[Portfolio](https://mithilkg-portfolio.vercel.app) · [LinkedIn](https://www.linkedin.com/in/mithil-k-gowda) · [GitHub profile](https://github.com/mithilkg10)
