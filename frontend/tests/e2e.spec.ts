@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Vyomrix End-to-End Test Suite', () => {
-  const email = 'admin@vyomrix.com';
-  const password = 'admin123';
+  const email = process.env.E2E_ADMIN_EMAIL || 'ci-owner@example.invalid';
+  const password = process.env.E2E_ADMIN_PASSWORD || '';
+  test.skip(!password, 'Set E2E_ADMIN_PASSWORD to run authenticated browser tests');
 
   test('should reject missing credentials', async ({ page }) => {
     await page.goto('/login');
@@ -18,11 +19,11 @@ test.describe('Vyomrix End-to-End Test Suite', () => {
     await page.goto('/login');
     
     await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', 'wrongpassword');
+    await page.fill('input[name="password"]', 'invalid-ci-attempt');
     
     await page.click('button[type="submit"]');
     
-    await expect(page.locator('text=Incorrect email or password').or(page.locator('text=Invalid credentials'))).toBeVisible();
+    await expect(page.getByRole('alert')).toBeVisible();
     await expect(page).toHaveURL(/.*\/login/);
   });
 
@@ -51,17 +52,9 @@ test.describe('Vyomrix End-to-End Test Suite', () => {
     }
     
     // Test Logout
-    const logoutBtn = page.locator('text=Logout').or(page.locator('text=Sign out'));
-    if (await logoutBtn.count() > 0) {
-        await Promise.all([
-          page.waitForURL(/.*\/login/),
-          logoutBtn.first().click()
-        ]);
-    } else {
-        // If no explicit logout button is found, navigate manually for the test flow completion
-        await page.goto('/login');
-    }
-    
+    await page.getByRole('button', { name: 'Logout' }).click();
+    await expect(page).toHaveURL(/.*\/login/);
+    await page.goto('/');
     await expect(page).toHaveURL(/.*\/login/);
   });
 

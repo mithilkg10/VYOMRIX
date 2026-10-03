@@ -60,6 +60,32 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-asyncio pytest-cov httpx
 
+      - name: Generate isolated CI login and signing secrets
+        run: |
+          python - <<'PY'
+          import os
+          import secrets
+          from passlib.context import CryptContext
+
+          owner_password = secrets.token_urlsafe(24) + 'A1!'
+          demo_password = secrets.token_urlsafe(24) + 'A1!'
+          values = {
+              'SECRET_KEY': secrets.token_urlsafe(48),
+              'CSRF_SECRET': secrets.token_urlsafe(48),
+              'ADMIN_EMAIL': 'ci-owner@example.invalid',
+              'ADMIN_PASSWORD_HASH': CryptContext(schemes=['bcrypt']).hash(owner_password),
+              'DEMO_PASSWORD': demo_password,
+              'DEMO_DATA_ONLY': 'true',
+              'E2E_ADMIN_EMAIL': 'ci-owner@example.invalid',
+              'E2E_ADMIN_PASSWORD': owner_password,
+          }
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as output:
+              for name, value in values.items():
+                  if name not in {'ADMIN_EMAIL', 'E2E_ADMIN_EMAIL', 'DEMO_DATA_ONLY'}:
+                      print(f'::add-mask::{value}')
+                  output.write(f'{name}={value}\n')
+          PY
+
       - name: Install Frontend Dependencies
         working-directory: ./frontend
         run: |
@@ -78,8 +104,6 @@ jobs:
           POSTGRES_PORT: '5432'
           POSTGRES_DB: vyomrix_test
           REDIS_HOST: localhost
-          SECRET_KEY: ${{ github.sha }}-${{ github.run_id }}-auth
-          CSRF_SECRET: ${{ github.sha }}-${{ github.run_id }}-csrf
         run: |
           alembic upgrade head
 
@@ -92,8 +116,6 @@ jobs:
           POSTGRES_PORT: '5432'
           POSTGRES_DB: vyomrix_test
           REDIS_HOST: localhost
-          SECRET_KEY: ${{ github.sha }}-${{ github.run_id }}-auth
-          CSRF_SECRET: ${{ github.sha }}-${{ github.run_id }}-csrf
           PYTHONPATH: .
         run: |
           pytest tests/ -v --cov=app
@@ -107,8 +129,6 @@ jobs:
           POSTGRES_PORT: '5432'
           POSTGRES_DB: vyomrix_test
           REDIS_HOST: localhost
-          SECRET_KEY: ${{ github.sha }}-${{ github.run_id }}-auth
-          CSRF_SECRET: ${{ github.sha }}-${{ github.run_id }}-csrf
         run: |
           uvicorn app.main:app --host 127.0.0.1 --port 8000 &
           sleep 5
@@ -122,12 +142,10 @@ jobs:
       - name: Run Playwright E2E Tests
         working-directory: ./frontend
         env:
+          BACKEND_API_URL: http://127.0.0.1:8000
           NEXT_PUBLIC_API_URL: http://127.0.0.1:8000/api/v1
           PLAYWRIGHT_TEST_BASE_URL: http://localhost:3000
-        run: |
-          npm run start &
-          sleep 5
-          npm run e2e
+        run: npm run e2e
 
       - name: Upload Playwright Report
         if: always()
