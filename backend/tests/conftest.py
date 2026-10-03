@@ -9,10 +9,12 @@ from app.domains.auth.services import AuthService
 from app.domains.auth.schemas import UserCreate
 import uuid
 from app.core.redis import init_redis
+from app.core.security_store import init_security_store
 
 @pytest_asyncio.fixture(autouse=True)
 async def init_redis_for_tests():
     await init_redis()
+    await init_security_store()
     from app.core.redis import get_redis
     redis_client = await get_redis()
     if redis_client:
@@ -40,7 +42,7 @@ async def setup_test_user():
     async with AsyncSessionLocal() as db:
         user_in = UserCreate(
             email=email,
-            password="testpassword123",
+            password="Testpassword123!",
             full_name="Test Concurrency User",
             role="analyst"
         )

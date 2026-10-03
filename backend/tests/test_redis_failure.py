@@ -10,11 +10,11 @@ async def test_redis_failure_rate_limit(db_session, setup_test_user):
     # Test Redis being unavailable during Login rate limiting
     limiter = RateLimiter(times=5, seconds=60)
     
-    # Mock get_redis to return a Redis object that raises an error on incr
+    # Mock the security store to fail during rate limiting.
     mock_redis = AsyncMock()
     mock_redis.incr.side_effect = redis.exceptions.ConnectionError("Redis down")
     
-    with patch("app.core.rate_limit.get_redis", return_value=mock_redis):
+    with patch("app.core.rate_limit.get_security_store", return_value=mock_redis):
         # Fail closed: If Redis is down, rate limiter must deny access
         from fastapi import HTTPException
         with pytest.raises(HTTPException) as exc:
