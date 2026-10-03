@@ -75,7 +75,7 @@ The backend reads `ADMIN_EMAIL` and `ADMIN_PASSWORD_HASH` from its runtime envir
 
 Set `DEMO_PASSWORD` to provision `demo.analyst@mithilkg.dev`. The password must pass the application complexity policy. This account has an SOC Analyst label with read-only permissions; it cannot manage users, change detection rules, modify incidents, or generate reports. `DEMO_DATA_ONLY=true` is required and should be set only on an isolated database containing synthetic cases. Never point public demo access at private telemetry. Login is at the frontend `/login`; the Recruiter Demo button fills only the email. Share the demo password separately.
 
-For local development, put backend variables in `backend/.env`, and set `BACKEND_API_URL` and a unique `CSRF_SECRET` of at least 32 characters in `frontend/.env.local`. For deployment, set them in the respective backend and frontend secret managers and restart. The [public frontend login](https://vyomrix.vercel.app/login) is reachable; recruiter demo access depends on the backend being connected to an isolated synthetic database and provisioned with the demo variables above.
+For local development, put backend variables in `backend/.env`, and set `BACKEND_API_URL` and a unique `CSRF_SECRET` of at least 32 characters in `frontend/.env.local`. For deployment, set them in the respective backend and frontend secret managers and restart. Vercel requires `BACKEND_API_URL` to point to the HTTPS backend. The [public frontend login](https://vyomrix.vercel.app/login) is reachable; recruiter demo access depends on the backend being connected to an isolated synthetic database and provisioned with the demo variables above.
 
 ### Start infrastructure
 
