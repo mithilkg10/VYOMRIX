@@ -8,6 +8,13 @@ export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("access_token")?.value;
+    const demoSession = cookieStore.get("demo_session")?.value === "1";
+
+    if (demoSession) {
+      const response = NextResponse.json({ status: "ok" });
+      response.cookies.set("demo_session", "", { path: "/", maxAge: 0 });
+      return response;
+    }
 
     // Validate CSRF with cryptographic signature bound to session
     const csrfHeader = request.headers.get("x-csrf-token");
