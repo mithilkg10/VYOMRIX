@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { DEMO_COOKIE_NAME, verifyDemoSessionToken } from "@/lib/demo-session";
 import { getBackendApiUrl } from "@/lib/api/config";
 import {
   demoAgents,
@@ -106,17 +107,27 @@ async function proxy(request: NextRequest, path: string) {
 async function handle(request: NextRequest, context: RouteContext) {
   const { path } = await context.params;
   const joined = path.join("/");
-  const demo = request.cookies.get("demo_session")?.value === "1";
+  const demoToken = request.cookies.get(DEMO_COOKIE_NAME)?.value;
+  const demo = await verifyDemoSessionToken(demoToken).catch(() => false);
+
   if (demo) {
-    const isSafeDemoPost = request.method === "POST" && joined.startsWith("reports/generate");
-    if (request.method !== "GET" && !isSafeDemoPost) {
-      return NextResponse.json({ detail: "Recruiter demo is read-only." }, { status: 403 });
+    if (request.method !== "GET" && request.method !== "HEAD") {
+      return NextResponse.json(
+        { detail: "Recruiter demo is read-only. Changes are disabled by design." },
+        { status: 403, headers: { "Cache-Control": "no-store" } },
+      );
     }
+
     if (joined === "v1/system/stream/telemetry" || joined === "v1/incidents/stream/updates") {
-      return new NextResponse(null, { status: 204 });
+      return new NextResponse(null, { status: 204, headers: { "Cache-Control": "no-store" } });
     }
-    return demoResponse(joined, request);
+
+    const response = demoResponse(joined, request);
+    response.headers.set("Cache-Control", "no-store");
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return response;
   }
+
   return proxy(request, joined);
 }
 
