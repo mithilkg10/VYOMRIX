@@ -33,12 +33,29 @@ function demoResponse(path: string, request: NextRequest, owner = false) {
   if (path === "assets" || path === "assets/") return NextResponse.json(demoAssets);
   if (path.startsWith("incidents")) {
     const url = new URL(request.url);
-    const skip = Number(url.searchParams.get("skip") ?? "0");
-    const limit = Number(url.searchParams.get("limit") ?? "50");
-    return NextResponse.json({ items: demoIncidents.slice(skip, skip + limit), total: demoIncidents.length, skip, limit });
+    const skip = Math.max(0, Number(url.searchParams.get("skip") ?? "0"));
+    const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") ?? "50")));
+    const status = url.searchParams.get("status");
+    const severity = url.searchParams.get("severity");
+    const filtered = demoIncidents.filter((incident) =>
+      (!status || incident.status === status) &&
+      (!severity || incident.severity === severity)
+    );
+    return NextResponse.json({
+      items: filtered.slice(skip, skip + limit),
+      total: filtered.length,
+      skip,
+      limit,
+    });
   }
-  if (path === "siem/alerts") return NextResponse.json({ total: demoAlerts.length, items: demoAlerts });
-  if (path === "siem/agents") return NextResponse.json({ total: demoAgents.length, items: demoAgents });
+  if (path === "siem/alerts") {
+    const url = new URL(request.url);
+    const limit = Math.min(200, Math.max(1, Number(url.searchParams.get("limit") ?? "50")));
+    return NextResponse.json({ total: demoAlerts.length, items: demoAlerts.slice(0, limit) });
+  }
+  if (path === "siem/agents") {
+    return NextResponse.json({ total: demoAgents.length, items: demoAgents });
+  }
   if (path === "detection/rules") return NextResponse.json(demoRules);
   if (path === "mitre/techniques") return NextResponse.json(demoMitre);
   if (path === "audit" || path === "audit/") return NextResponse.json(demoAudit);
