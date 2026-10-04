@@ -7,7 +7,7 @@ import { DemoStats } from "./DemoStats";
 
 export function DemoWorkspace() {
   return (
-    <main className="min-h-screen bg-[#020617] text-slate-100">
+    <main className="min-h-screen bg-[#020617] text-slate-100" data-demo-surface="recruiter">
       <div className="grid min-h-screen lg:grid-cols-[240px_1fr]">
         <DemoNav />
 
