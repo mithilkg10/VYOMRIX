@@ -32,6 +32,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/forgot-password") ||
     pathname.startsWith("/reset-password");
   const isDemoEntry = pathname === "/demo-login";
+  const isDemoExit = pathname === "/demo-logout";
   const isDemoWorkspace = pathname === "/demo";
 
   const hasValidAccess = Boolean(accessToken && !tokenHasExpired(accessToken));
@@ -39,7 +40,7 @@ export async function middleware(request: NextRequest) {
   const hasDemoSession = await verifyDemoSessionToken(demoToken).catch(() => false);
   const hasOwnerSession = await verifyOwnerSessionToken(ownerToken).catch(() => false);
 
-  if (hasDemoSession && !isDemoWorkspace && !isDemoEntry) {
+  if (hasDemoSession && !isDemoWorkspace && !isDemoEntry && !isDemoExit) {
     return NextResponse.redirect(new URL("/demo", request.url));
   }
 
@@ -47,7 +48,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(hasOwnerSession ? "/" : "/login", request.url));
   }
 
-  if (!hasValidAccess && !hasRefresh && !hasDemoSession && !hasOwnerSession && !isAuthPage && !isDemoEntry) {
+  if (!hasValidAccess && !hasRefresh && !hasDemoSession && !hasOwnerSession && !isAuthPage && !isDemoEntry && !isDemoExit) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("from", pathname);
     const response = NextResponse.redirect(loginUrl);
