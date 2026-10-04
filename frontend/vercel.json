@@ -41,5 +41,11 @@
       "source": "/internal-backend/api/v1/:path*",
       "destination": "/api/backend?backend_path=/api/v1/:path*"
     }
-  ]
+  ],
+  "functions": {
+    "api/backend.py": {
+      "maxDuration": 60,
+      "includeFiles": "../backend/**"
+    }
+  }
 }
