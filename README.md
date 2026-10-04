@@ -1,7 +1,5 @@
 # VYOMRIX
 
-# VYOMRIX
-
 **Live recruiter demo:** https://vyomrix.vercel.app/login — choose **Open recruiter demo**. No username or password is required.
 
 **SIEM & Security Operations Platform with XDR-style detection and incident workflows.**
