@@ -15,58 +15,91 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => { 
-    event.preventDefault(); 
-    setError(null); 
-    const formData = new FormData(event.currentTarget); 
-    const submittedEmail = String(formData.get("email") ?? "");
-    const submittedPassword = String(formData.get("password") ?? "");
 
-    if (submittedEmail === "demo.analyst@mithilkg.dev" && submittedPassword === "VyomrixDemo#2026!") {
-      document.cookie = "demo_session=1; Path=/; Max-Age=3600; SameSite=Lax";
-      router.push("/");
-      return;
-    }
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
 
+    const formData = new FormData(event.currentTarget);
     const params = new URLSearchParams();
-    params.append("email", submittedEmail);
-    params.append("password", submittedPassword);
-    
-    startTransition(async () => { 
+    params.append("email", String(formData.get("email") ?? ""));
+    params.append("password", String(formData.get("password") ?? ""));
+
+    startTransition(async () => {
       try {
         await authApi.login(params);
         router.push("/");
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "Invalid credentials");
       }
-    }); 
+    });
   };
-  return <section className="w-full max-w-md rounded-2xl border border-sky-200/15 bg-card/85 p-1 shadow-2xl shadow-slate-950/40 backdrop-blur-xl">
-    <div className="rounded-[0.9rem] border border-white/5 bg-background/35 p-6 sm:p-8">
-      <div className="mb-7 space-y-3"><div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[.16em] text-cyan-300"><ShieldCheck className="h-4 w-4" /> Secure operator access</div><h1 className="text-3xl font-semibold tracking-tight">Sign in to <span className="gradient-text">VYOMRIX</span></h1><p className="text-sm leading-6 text-muted-foreground">Access the security operations workspace and its protected telemetry.</p></div>
-      <form className="space-y-5" onSubmit={handleSubmit} noValidate>
-        {error && <div role="alert" className="flex gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />{error}</div>}
-        <div className="space-y-2"><Label htmlFor="email">Work email</Label><Input id="email" name="email" type="email" autoComplete="email" placeholder="name@company.com" value={email} onChange={(event) => setEmail(event.target.value)} required disabled={isPending} className="h-11 bg-background/60" /></div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
-            <Link href="/forgot-password" className="text-xs font-medium text-primary hover:underline">Forgot password?</Link>
+
+  return (
+    <section className="w-full max-w-md rounded-2xl border border-sky-200/15 bg-card/90 p-1 shadow-2xl shadow-slate-950/40 backdrop-blur-xl">
+      <div className="rounded-[0.9rem] border border-white/5 bg-background/35 p-6 sm:p-8">
+        <div className="mb-7 space-y-3">
+          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[.16em] text-cyan-300">
+            <ShieldCheck className="h-4 w-4" />
+            VYOMRIX Security Operations
           </div>
-          <div className="relative"><Input id="password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" required disabled={isPending} className="h-11 bg-background/60 pr-11" /><Button type="button" variant="ghost" size="icon-sm" className="absolute right-1 top-1" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((value) => !value)}>{showPassword ? <EyeOff /> : <Eye />}</Button></div>
+          <h1 className="text-3xl font-semibold tracking-tight">Operator sign in</h1>
+          <p className="text-sm leading-6 text-muted-foreground">
+            Private access for the live engineering workspace.
+          </p>
         </div>
-        <Button className="h-11 w-full bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500 font-semibold text-slate-950 hover:opacity-90" type="submit" disabled={isPending}>{isPending ? "Authenticating..." : "Sign in securely"}</Button>
-      </form>
-      <div className="mt-6 rounded-xl border border-border bg-background/40 p-4 text-sm">
-        <p className="font-medium">Recruiter Demo</p>
-        <p className="mt-1 text-muted-foreground">Read-only synthetic SOC access. Email: demo.analyst@mithilkg.dev · Password: VyomrixDemo#2026!</p>
-        <Link
-          href="/demo-login"
-          className="mt-3 inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-        >
-          Open Recruiter Demo
-        </Link>
+
+        <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+          {error && (
+            <div role="alert" className="flex gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              {error}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Work email</Label>
+            <Input id="email" name="email" type="email" autoComplete="email" placeholder="name@company.com" value={email} onChange={(event) => setEmail(event.target.value)} required disabled={isPending} className="h-11 bg-background/60" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              <Link href="/forgot-password" className="text-xs font-medium text-primary hover:underline">Forgot password?</Link>
+            </div>
+            <div className="relative">
+              <Input id="password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" required disabled={isPending} className="h-11 bg-background/60 pr-11" />
+              <Button type="button" variant="ghost" size="icon-sm" className="absolute right-1 top-1" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((value) => !value)}>
+                {showPassword ? <EyeOff /> : <Eye />}
+              </Button>
+            </div>
+          </div>
+
+          <Button className="h-11 w-full bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500 font-semibold text-slate-950 hover:opacity-90" type="submit" disabled={isPending}>
+            {isPending ? "Signing in..." : "Sign in"}
+          </Button>
+        </form>
+
+        <div className="my-7 flex items-center gap-3 text-xs uppercase tracking-[.14em] text-muted-foreground">
+          <span className="h-px flex-1 bg-border" />
+          Recruiter access
+          <span className="h-px flex-1 bg-border" />
+        </div>
+
+        <form action="/demo-login" method="post">
+          <Button type="submit" variant="outline" className="h-12 w-full border-cyan-300/25 bg-cyan-300/[.06] text-cyan-50 hover:bg-cyan-300/[.12]">
+            Open recruiter demo
+          </Button>
+        </form>
+        <p className="mt-3 text-center text-xs leading-5 text-muted-foreground">
+          No username or password. Opens a short-lived, read-only workspace containing synthetic Cyber Defense Lab data only.
+        </p>
+
+        <div className="mt-6 flex items-center gap-2 border-t border-border pt-4 text-xs text-muted-foreground">
+          <LockKeyhole className="h-3.5 w-3.5 text-success" />
+          Demo access cannot modify incidents, rules, users, telemetry or system settings.
+        </div>
       </div>
-      <div className="mt-6 flex items-center gap-2 border-t border-border pt-4 text-xs text-muted-foreground"><LockKeyhole className="h-3.5 w-3.5 text-success" /> Session cookies are protected and scoped to this platform.</div>
-    </div>
-  </section>;
+    </section>
+  );
 }
