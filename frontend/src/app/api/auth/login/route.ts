@@ -1,49 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getBackendApiUrl } from "@/lib/api/config";
-import { setAuthCookies } from "@/lib/api/cookies";
-import { generateCsrfToken } from "@/lib/csrf";
+import bcrypt from "bcryptjs";
+import { createOwnerSessionToken, OWNER_COOKIE_NAME } from "@/lib/demo-session";
+
+const OWNER_TTL_SECONDS = 8 * 60 * 60;
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
+    const email = String(formData.get("email") ?? formData.get("username") ?? "").trim().toLowerCase();
+    const password = String(formData.get("password") ?? "");
 
-    // The UI labels this field as email; FastAPI's OAuth2 form expects username.
-    if (!formData.get("username") && formData.get("email")) {
-      formData.set("username", String(formData.get("email")));
+    const configuredEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+    const configuredHash = process.env.ADMIN_PASSWORD_HASH;
+
+    if (!configuredEmail || !configuredHash) {
+      return NextResponse.json({ detail: "Owner access is not configured." }, { status: 503 });
     }
 
-    let backendResponse;
-    try {
-      backendResponse = await fetch(`${getBackendApiUrl()}/api/v1/auth/login`, {
-        method: "POST",
-        body: formData,
-        headers: { Accept: "application/json" },
-        cache: "no-store",
-      });
-    } catch (e) {
-      console.error("Backend fetch error:", e);
-      return NextResponse.json({ detail: "Service unavailable. Could not connect to backend." }, { status: 503 });
+    const compatibleHash = configuredHash.replace(/^\$2y\$/, "$2b$");
+    const passwordMatches = email === configuredEmail && await bcrypt.compare(password, compatibleHash);
+
+    if (!passwordMatches) {
+      return NextResponse.json({ detail: "Invalid credentials" }, { status: 401 });
     }
 
-    const data = await backendResponse.json();
-
-    if (!backendResponse.ok) {
-      return NextResponse.json(data, { status: backendResponse.status });
-    }
-
-    const { access_token, refresh_token, session_id, token_type, ...safeMetadata } = data;
-    const csrfToken = generateCsrfToken(refresh_token || access_token);
-
+    const token = await createOwnerSessionToken(OWNER_TTL_SECONDS);
     const response = NextResponse.json({
       status: "success",
-      session_id,
-      ...safeMetadata,
+      session_id: "hosted-owner-review",
+      mode: "owner-review",
     });
 
-    setAuthCookies(response, access_token, refresh_token, csrfToken, session_id);
+    response.cookies.set(OWNER_COOKIE_NAME, token, {
+      path: "/",
+      maxAge: OWNER_TTL_SECONDS,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+    });
+    response.headers.set("Cache-Control", "no-store");
     return response;
   } catch (error) {
-    console.error("Login route error:", error);
+    console.error("Owner login route error:", error);
     return NextResponse.json({ detail: "Internal Server Error" }, { status: 500 });
   }
 }
