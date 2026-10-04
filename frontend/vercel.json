@@ -1,19 +1,21 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "functions": {
-    "api/backend.py": {
-      "maxDuration": 60,
-      "includeFiles": "backend/**"
-    }
-  },
-  "rewrites": [
+  "headers": [
     {
-      "source": "/api/v1",
-      "destination": "/api/backend?backend_path=/api/v1"
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" }
+      ]
     },
     {
-      "source": "^/api/v1/(.*)$",
-      "destination": "/api/backend?backend_path=/api/v1/$1"
+      "source": "/demo(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "private, no-store, max-age=0" },
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+      ]
     }
   ]
 }
