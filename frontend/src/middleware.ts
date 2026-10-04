@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { DEMO_COOKIE_NAME, verifyDemoSessionToken } from "@/lib/demo-session";
 
 function tokenHasExpired(token: string) {
   try {
@@ -14,35 +15,46 @@ function tokenHasExpired(token: string) {
   }
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
   const accessToken = request.cookies.get("access_token")?.value;
   const refreshToken = request.cookies.get("refresh_token")?.value;
-  
-  const isAuthPage = request.nextUrl.pathname.startsWith("/login") || 
-                     request.nextUrl.pathname.startsWith("/forgot-password") || 
-                     request.nextUrl.pathname.startsWith("/reset-password");
-  const isPublicDemo = request.nextUrl.pathname === "/demo" || request.nextUrl.pathname === "/demo-login";
-  
-  const hasValidAccess = accessToken && !tokenHasExpired(accessToken);
-  const hasRefresh = !!refreshToken;
-  const hasDemoSession = request.cookies.get("demo_session")?.value === "1";
-  
-  let response: NextResponse;
-  
-  if (!hasValidAccess && !hasRefresh && !hasDemoSession && !isAuthPage && !isPublicDemo) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("from", request.nextUrl.pathname);
-    response = NextResponse.redirect(loginUrl);
-    if (accessToken) {
-      response.cookies.delete("access_token");
-    }
-  } else if ((hasValidAccess || hasDemoSession) && isAuthPage) {
-    response = NextResponse.redirect(new URL("/", request.url));
-  } else {
-    response = NextResponse.next();
+  const demoToken = request.cookies.get(DEMO_COOKIE_NAME)?.value;
+
+  const isAuthPage =
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/forgot-password") ||
+    pathname.startsWith("/reset-password");
+  const isDemoEntry = pathname === "/demo-login";
+  const isDemoWorkspace = pathname === "/demo";
+
+  const hasValidAccess = Boolean(accessToken && !tokenHasExpired(accessToken));
+  const hasRefresh = Boolean(refreshToken);
+  const hasDemoSession = await verifyDemoSessionToken(demoToken).catch(() => false);
+
+  if (hasDemoSession && !isDemoWorkspace && !isDemoEntry) {
+    return NextResponse.redirect(new URL("/demo", request.url));
   }
 
-  return response;
+  if (isDemoWorkspace && !hasDemoSession) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  if (!hasValidAccess && !hasRefresh && !hasDemoSession && !isAuthPage && !isDemoEntry) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("from", pathname);
+    const response = NextResponse.redirect(loginUrl);
+    if (accessToken) response.cookies.delete("access_token");
+    return response;
+  }
+
+  if ((hasValidAccess || hasDemoSession) && isAuthPage) {
+    return NextResponse.redirect(new URL(hasDemoSession ? "/demo" : "/", request.url));
+  }
+
+  return NextResponse.next();
 }
 
-export const config = { matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"] };
+export const config = {
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+};
