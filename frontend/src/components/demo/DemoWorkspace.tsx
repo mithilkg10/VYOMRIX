@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { ExternalLink, LockKeyhole, ShieldCheck } from "lucide-react";
 import { DemoAttackAndReports } from "./DemoAttackAndReports";
 import { DemoAssetsAndDetections } from "./DemoAssetsAndDetections";
@@ -83,9 +82,8 @@ export function DemoWorkspace() {
             <DemoAssetsAndDetections />
             <DemoAttackAndReports />
 
-            <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-6 text-xs text-slate-500">
-              <span>VYOMRIX · recruiter-safe review environment</span>
-              <Link href="/login" className="hover:text-slate-300">Private operator sign-in</Link>
+            <footer className="mt-8 border-t border-white/10 pt-6 text-xs text-slate-500">
+              VYOMRIX · recruiter-safe review environment
             </footer>
           </div>
         </section>
