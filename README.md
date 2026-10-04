@@ -1,11 +1,12 @@
 # VYOMRIX
 
-**Recruiter demo login:** https://vyomrix.vercel.app/login — `demo.analyst@mithilkg.dev` / `VyomrixDemo#2026!`
- Security Platform
+# VYOMRIX
 
-[Portfolio case study](https://mithilkg-portfolio.vercel.app/projects/vyomrix-security-platform) · [Documented Cyber Defense Lab investigations](https://github.com/mithilkg10/MKG-Cyber-Defense-Lab)
+**Live recruiter demo:** https://vyomrix.vercel.app/login — choose **Open recruiter demo**. No username or password is required.
 
 **SIEM & Security Operations Platform with XDR-style detection and incident workflows.**
+
+[Portfolio case study](https://mithilkg-portfolio.vercel.app/projects/vyomrix-security-platform) · [Documented Cyber Defense Lab investigations](https://github.com/mithilkg10/MKG-Cyber-Defense-Lab)
 
 VYOMRIX is a full stack cybersecurity engineering project built to demonstrate how multiple security operations capabilities can be brought into one coherent platform. The project combines a Next.js frontend, a FastAPI backend, PostgreSQL, Redis, background task processing, security integrations, automated tests, and end to end validation.
 
@@ -72,13 +73,13 @@ cp .env.example backend/.env
 
 Never commit real credentials, API keys, signing secrets, or production database content.
 
-### Owner and recruiter login
+### Operator and recruiter access
 
-The backend reads `ADMIN_EMAIL` and `ADMIN_PASSWORD_HASH` from its runtime environment. Use a unique private password, generate its bcrypt hash locally, and configure only the hash in the backend/deployment secrets. Startup provisions a **Super Admin** account at that email; no default administrator password is created or logged. Existing owner accounts with another email require manual review and rotation.
+The private operator workspace uses the backend authentication flow. `ADMIN_EMAIL` and `ADMIN_PASSWORD_HASH` stay in runtime secrets; no administrator password is committed or rendered in the frontend.
 
-Set `DEMO_PASSWORD` to provision `demo.analyst@mithilkg.dev`. The password must pass the application complexity policy. This account has an SOC Analyst label with read-only permissions; it cannot manage users, change detection rules, modify incidents, or generate reports. `DEMO_DATA_ONLY=true` is required and should be set only on an isolated database containing synthetic cases. Never point public demo access at private telemetry. Login is at the frontend `/login`; the Recruiter Demo button fills only the email. Share the demo password separately.
+The public recruiter demo is deliberately separate from backend authentication. Selecting **Open recruiter demo** creates a short-lived signed HttpOnly session and opens a read-only workspace backed only by sanitized synthetic data. Demo requests cannot modify incidents, rules, users, telemetry, settings, or other system state, and the session is confined to the recruiter workspace.
 
-For local development, put backend variables in `backend/.env`, and set `BACKEND_API_URL` and a unique `CSRF_SECRET` of at least 32 characters in `frontend/.env.local`. For deployment, set them in the respective backend and frontend secret managers and restart. Vercel requires `BACKEND_API_URL` to point to the HTTPS backend. The [public frontend login](https://vyomrix.vercel.app/login) is reachable; recruiter demo access depends on the backend being connected to an isolated synthetic database and provisioned with the demo variables above.
+Configure a unique `DEMO_SESSION_SECRET` of at least 32 characters in the deployment secret manager. `CSRF_SECRET` remains required for the private operator flow. Do not put either value in source control.
 
 ### Start infrastructure
 
