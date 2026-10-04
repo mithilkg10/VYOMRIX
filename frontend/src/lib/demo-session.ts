@@ -1,3 +1,4 @@
+// Server-only signing for isolated recruiter sessions.
 const encoder = new TextEncoder();
 
 export const DEMO_COOKIE_NAME = "vyomrix_demo";
