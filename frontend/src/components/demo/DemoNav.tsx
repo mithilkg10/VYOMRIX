@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Activity, Boxes, FileText, Gauge, Network, Radar, ShieldCheck } from "lucide-react";
 
 const items = [
@@ -10,7 +9,23 @@ const items = [
   { href: "#reports", label: "Reports", icon: FileText },
 ];
 
-export function DemoNav() {
+export function DemoNav({ mobile = false }: { mobile?: boolean }) {
+  if (mobile) {
+    return (
+      <nav aria-label="Recruiter demo sections" className="flex gap-2 overflow-x-auto pb-2">
+        {items.map(({ href, label }) => (
+          <a
+            key={href}
+            href={href}
+            className="shrink-0 rounded-lg border border-white/10 bg-white/[.03] px-3 py-2 text-xs font-medium text-slate-300"
+          >
+            {label}
+          </a>
+        ))}
+      </nav>
+    );
+  }
+
   return (
     <aside className="hidden min-h-screen border-r border-white/10 bg-[#050a16] lg:flex lg:flex-col">
       <div className="border-b border-white/10 p-6">
@@ -20,12 +35,12 @@ export function DemoNav() {
           </div>
           <div>
             <div className="font-semibold">VYOMRIX</div>
-            <div className="text-[10px] uppercase tracking-[.18em] text-slate-500">Recruiter Demo</div>
+            <div className="text-[10px] uppercase tracking-[.18em] text-slate-500">Recruiter Review</div>
           </div>
         </div>
       </div>
 
-      <nav className="space-y-1 p-4">
+      <nav aria-label="Recruiter demo sections" className="space-y-1 p-4">
         {items.map(({ href, label, icon: Icon }) => (
           <a
             key={href}
@@ -39,16 +54,13 @@ export function DemoNav() {
       </nav>
 
       <div className="mt-auto border-t border-white/10 p-4">
-        <div className="rounded-xl border border-emerald-300/10 bg-emerald-300/[.05] p-3 text-xs text-slate-400">
-          <div className="mb-1 flex items-center gap-2 text-emerald-300">
+        <div className="rounded-xl border border-emerald-300/10 bg-emerald-300/[.05] p-3 text-xs leading-5 text-slate-400">
+          <div className="mb-1 flex items-center gap-2 font-medium text-emerald-300">
             <span className="h-2 w-2 rounded-full bg-emerald-400" />
-            Read-only demo
+            Read-only session
           </div>
-          Synthetic data only.
+          Synthetic lab data only. No backend credentials or administrative actions are exposed.
         </div>
-        <Link href="/login" className="mt-3 block text-xs text-slate-500 hover:text-white">
-          Return to operator login
-        </Link>
       </div>
     </aside>
   );
