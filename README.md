@@ -2,6 +2,8 @@
 
 **Live recruiter demo:** https://vyomrix.vercel.app/login — choose **Open recruiter demo**. No username or password is required.
 
+Private operator access is provisioned through deployment secrets; credentials are never committed to the repository.
+
 **SIEM & Security Operations Platform with XDR-style detection and incident workflows.**
 
 [Portfolio case study](https://mithilkg-portfolio.vercel.app/projects/vyomrix-security-platform) · [Documented Cyber Defense Lab investigations](https://github.com/mithilkg10/MKG-Cyber-Defense-Lab)
