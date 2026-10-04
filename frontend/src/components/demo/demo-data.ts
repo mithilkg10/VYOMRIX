@@ -38,10 +38,10 @@ export const demoAttack = [
 ];
 
 export const demoReports = [
-  "INC-001 Authentication investigation",
-  "INC-002 PowerShell investigation",
-  "INC-003 Scheduled task investigation",
-  "INC-004 Partial validation note",
-  "INC-005 Web application investigation",
-  "INC-006 Data transfer investigation",
+  { id: "INC-001", title: "Authentication investigation", status: "Validated" },
+  { id: "INC-002", title: "PowerShell investigation", status: "Validated" },
+  { id: "INC-003", title: "Scheduled task investigation", status: "Validated" },
+  { id: "INC-004", title: "Process discovery validation note", status: "Partial" },
+  { id: "INC-005", title: "Web application investigation", status: "Validated" },
+  { id: "INC-006", title: "Data transfer investigation", status: "Validated" },
 ];
