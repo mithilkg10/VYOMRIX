@@ -130,7 +130,7 @@ export const demoAlerts = Array.from({ length: 96 }, (_, index) => {
     description: template.description,
     severity: template.severity,
     source: {
-      name: template.tags.includes("waf") ? "WAF" : "Wazuh",
+      name: template.tags.some((tag) => tag === "waf") ? "WAF" : "Wazuh",
       ip: asset.ip_address,
       agent_id: String((index % 10) + 1).padStart(3, "0"),
       agent_name: asset.hostname,
