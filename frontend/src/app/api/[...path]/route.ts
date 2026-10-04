@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { DEMO_COOKIE_NAME, verifyDemoSessionToken } from "@/lib/demo-session";
+import { DEMO_COOKIE_NAME, OWNER_COOKIE_NAME, verifyDemoSessionToken, verifyOwnerSessionToken } from "@/lib/demo-session";
 import { getBackendApiUrl } from "@/lib/api/config";
 import {
   demoAgents,
@@ -14,8 +14,20 @@ import {
 
 type RouteContext = { params: Promise<{ path: string[] }> };
 
-function demoResponse(path: string, request: NextRequest) {
-  if (path === "v1/auth/me") return NextResponse.json(demoUser);
+function demoResponse(path: string, request: NextRequest, owner = false) {
+  if (path === "v1/auth/me") {
+    if (owner) {
+      return NextResponse.json({
+        ...demoUser,
+        id: "hosted-owner",
+        email: process.env.ADMIN_EMAIL ?? "owner@vyomrix.local",
+        full_name: "VYOMRIX Owner",
+        role: "Super Admin",
+        permissions: ["admin:*"],
+      });
+    }
+    return NextResponse.json(demoUser);
+  }
   if (path === "health/status") return NextResponse.json({ status: "ok", details: { mode: "recruiter-demo", data: "synthetic" }, service: "VYOMRIX Demo", version: "1.0", database: "synthetic" });
   if (path === "health" || path === "health/" || path === "health/live" || path === "health/ready") return NextResponse.json({ status: "ok", service: "VYOMRIX Demo", version: "1.0", database: "synthetic" });
   if (path === "assets" || path === "assets/") return NextResponse.json(demoAssets);
@@ -108,12 +120,14 @@ async function handle(request: NextRequest, context: RouteContext) {
   const { path } = await context.params;
   const joined = path.join("/");
   const demoToken = request.cookies.get(DEMO_COOKIE_NAME)?.value;
+  const ownerToken = request.cookies.get(OWNER_COOKIE_NAME)?.value;
   const demo = await verifyDemoSessionToken(demoToken).catch(() => false);
+  const owner = await verifyOwnerSessionToken(ownerToken).catch(() => false);
 
-  if (demo) {
+  if (demo || owner) {
     if (request.method !== "GET" && request.method !== "HEAD") {
       return NextResponse.json(
-        { detail: "Recruiter demo is read-only. Changes are disabled by design." },
+        { detail: owner ? "Hosted owner review is read-only. Changes are disabled." : "Recruiter demo is read-only. Changes are disabled by design." },
         { status: 403, headers: { "Cache-Control": "no-store" } },
       );
     }
@@ -122,7 +136,7 @@ async function handle(request: NextRequest, context: RouteContext) {
       return new NextResponse(null, { status: 204, headers: { "Cache-Control": "no-store" } });
     }
 
-    const response = demoResponse(joined, request);
+    const response = demoResponse(joined, request, owner);
     response.headers.set("Cache-Control", "no-store");
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
     return response;
