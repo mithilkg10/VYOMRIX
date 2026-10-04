@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, ExternalLink, Search } from "lucide-react";
+import { ExternalLink, LockKeyhole, ShieldCheck } from "lucide-react";
 import { DemoAttackAndReports } from "./DemoAttackAndReports";
 import { DemoAssetsAndDetections } from "./DemoAssetsAndDetections";
 import { DemoIncidents } from "./DemoIncidents";
@@ -9,63 +9,73 @@ import { DemoStats } from "./DemoStats";
 export function DemoWorkspace() {
   return (
     <main className="min-h-screen bg-[#020617] text-slate-100">
-      <div className="grid min-h-screen lg:grid-cols-[250px_1fr]">
+      <div className="grid min-h-screen lg:grid-cols-[240px_1fr]">
         <DemoNav />
 
         <section className="min-w-0">
-          <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 bg-[#020617]/90 px-5 py-4 backdrop-blur-xl sm:px-8">
-            <div>
-              <p className="text-xs uppercase tracking-[.18em] text-cyan-300">SIEM & Security Operations</p>
-              <h1 className="mt-1 text-xl font-semibold">Analyst Overview</h1>
-            </div>
+          <header className="sticky top-0 z-20 border-b border-white/10 bg-[#020617]/95 px-5 py-4 backdrop-blur-xl sm:px-8">
+            <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[.16em] text-cyan-300">VYOMRIX Recruiter Demo</p>
+                <h1 className="mt-1 text-xl font-semibold">Security Operations Workspace</h1>
+              </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="hidden items-center gap-2 rounded-lg border border-white/10 bg-white/[.03] px-3 py-2 text-sm text-slate-500 md:flex">
-                <Search className="h-4 w-4" />
-                Synthetic workspace
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-2 rounded-lg border border-emerald-300/15 bg-emerald-300/[.06] px-3 py-2 text-xs font-medium text-emerald-200">
+                  <ShieldCheck className="h-4 w-4" />
+                  Read-only · synthetic data
+                </span>
+                <form action="/demo-logout" method="post">
+                  <button className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 transition hover:bg-white/[.05] hover:text-white">
+                    End demo
+                  </button>
+                </form>
               </div>
-              <div className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/[.03] text-slate-400">
-                <Bell className="h-4 w-4" />
-              </div>
-              <Link href="/login" className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5">
-                Operator login
-              </Link>
-              <a
-                href="https://github.com/mithilkg10/VYOMRIX"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5"
-              >
-                GitHub <ExternalLink className="h-3.5 w-3.5" />
-              </a>
             </div>
           </header>
 
-          <div className="mx-auto max-w-[1500px] p-5 sm:p-8">
-            <div className="mb-7 rounded-2xl border border-cyan-300/15 bg-cyan-300/[.04] p-5">
-              <p className="text-sm font-medium text-cyan-100">Recruiter-safe VYOMRIX workspace</p>
-              <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-400">
-                Explore a read-only representation of the VYOMRIX analyst workflow using sanitized Cyber Defense Lab data.
-                Destructive controls, private telemetry, secrets and privileged administration are intentionally excluded.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                <a
-                  href="https://mithilkg-portfolio.vercel.app/lab"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-lg border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100"
-                >
-                  Open Cyber Defense Lab ↗
-                </a>
-                <a
-                  href="https://mithilkg-portfolio.vercel.app/projects/vyomrix-security-platform"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300"
-                >
-                  Project case study ↗
-                </a>
+          <div className="mx-auto max-w-[1440px] p-5 sm:p-8">
+            <section id="overview" className="rounded-2xl border border-cyan-300/15 bg-gradient-to-br from-cyan-300/[.06] to-blue-400/[.025] p-5 sm:p-6">
+              <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+                <div className="max-w-4xl">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-cyan-100">
+                    <LockKeyhole className="h-4 w-4" />
+                    Safe public review environment
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-slate-300">
+                    This workspace shows how VYOMRIX brings alerts, investigations, assets, detection validation,
+                    MITRE ATT&amp;CK context and reporting into one analyst flow. The data is sanitized from controlled
+                    Cyber Defense Lab scenarios. No private telemetry, credentials or privileged controls are exposed.
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-400">
+                    The recruiter session is isolated from the operator environment. Every write operation is blocked,
+                    and the session expires automatically.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <a
+                    href="https://mithilkg-portfolio.vercel.app/lab"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-lg border border-cyan-300/20 bg-cyan-300/10 px-4 py-2.5 text-sm font-medium text-cyan-50 transition hover:bg-cyan-300/[.16]"
+                  >
+                    Cyber Defense Lab <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                  <a
+                    href="https://github.com/mithilkg10/VYOMRIX"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-white/[.05]"
+                  >
+                    Source code <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </div>
               </div>
+            </section>
+
+            <div className="mt-6 lg:hidden">
+              <DemoNav mobile />
             </div>
 
             <DemoStats />
@@ -73,8 +83,9 @@ export function DemoWorkspace() {
             <DemoAssetsAndDetections />
             <DemoAttackAndReports />
 
-            <footer className="mt-8 border-t border-white/10 pt-6 text-xs text-slate-500">
-              Public demo account: demo.analyst@mithilkg.dev · read-only synthetic data.
+            <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-6 text-xs text-slate-500">
+              <span>VYOMRIX · recruiter-safe review environment</span>
+              <Link href="/login" className="hover:text-slate-300">Private operator sign-in</Link>
             </footer>
           </div>
         </section>
