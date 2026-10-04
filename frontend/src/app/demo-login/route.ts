@@ -1,17 +1,28 @@
 import { NextResponse } from "next/server";
+import { createDemoSessionToken, DEMO_COOKIE_NAME } from "@/lib/demo-session";
 
-export function GET(request: Request) {
-  const url = new URL(request.url);
-  const requested = url.searchParams.get("to") ?? "/";
-  const destination = requested.startsWith("/") && !requested.startsWith("//") ? requested : "/";
+const DEMO_TTL_SECONDS = 30 * 60;
 
-  const response = NextResponse.redirect(new URL(destination, request.url));
-  response.cookies.set("demo_session", "1", {
+async function startDemo(request: Request) {
+  const token = await createDemoSessionToken(DEMO_TTL_SECONDS);
+  const response = NextResponse.redirect(new URL("/demo", request.url), 303);
+
+  response.cookies.set(DEMO_COOKIE_NAME, token, {
     path: "/",
-    maxAge: 3600,
-    sameSite: "lax",
-    secure: true,
-    httpOnly: false,
+    maxAge: DEMO_TTL_SECONDS,
+    sameSite: "strict",
+    secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
   });
+
+  response.headers.set("Cache-Control", "no-store");
   return response;
+}
+
+export async function POST(request: Request) {
+  return startDemo(request);
+}
+
+export async function GET(request: Request) {
+  return startDemo(request);
 }
