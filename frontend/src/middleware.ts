@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { DEMO_COOKIE_NAME, verifyDemoSessionToken } from "@/lib/demo-session";
+import {
+  DEMO_COOKIE_NAME,
+  OWNER_COOKIE_NAME,
+  verifyDemoSessionToken,
+  verifyOwnerSessionToken,
+} from "@/lib/demo-session";
 
 function tokenHasExpired(token: string) {
   try {
@@ -20,6 +25,7 @@ export async function middleware(request: NextRequest) {
   const accessToken = request.cookies.get("access_token")?.value;
   const refreshToken = request.cookies.get("refresh_token")?.value;
   const demoToken = request.cookies.get(DEMO_COOKIE_NAME)?.value;
+  const ownerToken = request.cookies.get(OWNER_COOKIE_NAME)?.value;
 
   const isAuthPage =
     pathname.startsWith("/login") ||
@@ -31,16 +37,17 @@ export async function middleware(request: NextRequest) {
   const hasValidAccess = Boolean(accessToken && !tokenHasExpired(accessToken));
   const hasRefresh = Boolean(refreshToken);
   const hasDemoSession = await verifyDemoSessionToken(demoToken).catch(() => false);
+  const hasOwnerSession = await verifyOwnerSessionToken(ownerToken).catch(() => false);
 
   if (hasDemoSession && !isDemoWorkspace && !isDemoEntry) {
     return NextResponse.redirect(new URL("/demo", request.url));
   }
 
   if (isDemoWorkspace && !hasDemoSession) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL(hasOwnerSession ? "/" : "/login", request.url));
   }
 
-  if (!hasValidAccess && !hasRefresh && !hasDemoSession && !isAuthPage && !isDemoEntry) {
+  if (!hasValidAccess && !hasRefresh && !hasDemoSession && !hasOwnerSession && !isAuthPage && !isDemoEntry) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("from", pathname);
     const response = NextResponse.redirect(loginUrl);
@@ -48,7 +55,7 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  if ((hasValidAccess || hasDemoSession) && isAuthPage) {
+  if ((hasValidAccess || hasDemoSession || hasOwnerSession) && isAuthPage) {
     return NextResponse.redirect(new URL(hasDemoSession ? "/demo" : "/", request.url));
   }
 
