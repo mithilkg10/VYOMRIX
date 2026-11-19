@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DEMO_COOKIE_NAME, OWNER_COOKIE_NAME, verifyDemoSessionToken, verifyOwnerSessionToken } from "@/lib/demo-session";
 import { getBackendApiUrl } from "@/lib/api/config";
+import { isHostedShowcase } from "@/lib/hosting";
 import {
   demoAgents,
   demoAlerts,
@@ -125,7 +126,12 @@ async function proxy(request: NextRequest, path: string) {
   headers.set("accept", "application/json");
 
   const body = request.method === "GET" || request.method === "HEAD" ? undefined : await request.text();
-  const response = await fetch(target, { method: request.method, headers, body, cache: "no-store" });
+  let response: Response;
+  try {
+    response = await fetch(target, { method: request.method, headers, body, cache: "no-store" });
+  } catch {
+    return NextResponse.json({ detail: "Backend is unreachable." }, { status: 502 });
+  }
   const responseBody = await response.text();
   return new NextResponse(responseBody, {
     status: response.status,
@@ -157,6 +163,10 @@ async function handle(request: NextRequest, context: RouteContext) {
     response.headers.set("Cache-Control", "no-store");
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
     return response;
+  }
+
+  if (isHostedShowcase()) {
+    return NextResponse.json({ detail: "Sign in required." }, { status: 401, headers: { "Cache-Control": "no-store" } });
   }
 
   return proxy(request, joined);

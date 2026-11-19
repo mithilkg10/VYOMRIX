@@ -1,12 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getBackendApiUrl } from "@/lib/api/config";
+import { OWNER_COOKIE_NAME, verifyOwnerSessionToken } from "@/lib/demo-session";
 
 export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("access_token")?.value;
     const demoSession = cookieStore.get("demo_session")?.value === "1";
+
+    const ownerSession = await verifyOwnerSessionToken(cookieStore.get(OWNER_COOKIE_NAME)?.value).catch(() => false);
+    if (ownerSession) {
+      return NextResponse.json([{
+        id: "hosted-owner-review",
+        user_agent: request.headers.get("user-agent") ?? "Owner browser",
+        ip_address: "Hidden",
+        created_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+        last_used_at: new Date().toISOString(),
+        is_current: true
+      }]);
+    }
 
     if (demoSession) {
       return NextResponse.json([{
@@ -32,7 +45,7 @@ export async function GET(request: NextRequest) {
       cache: "no-store",
     });
 
-    const data = await backendResponse.json();
+    const data = await backendResponse.json().catch(() => ({ detail: "The session service returned an unexpected response." }));
     return NextResponse.json(data, { status: backendResponse.status });
   } catch (error) {
     console.error("Sessions GET route error:", error);

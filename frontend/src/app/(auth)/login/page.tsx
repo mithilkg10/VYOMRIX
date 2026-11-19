@@ -21,14 +21,28 @@ export default function LoginPage() {
     setError(null);
 
     const formData = new FormData(event.currentTarget);
+    const emailValue = String(formData.get("email") ?? "").trim();
+    const passwordValue = String(formData.get("password") ?? "");
+    if (!emailValue || !passwordValue) {
+      setError("Enter your work email and password.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+      setError("Enter a valid work email address.");
+      return;
+    }
     const params = new URLSearchParams();
-    params.append("email", String(formData.get("email") ?? ""));
-    params.append("password", String(formData.get("password") ?? ""));
+    params.append("email", emailValue);
+    params.append("password", passwordValue);
+
+    // Return to the page the user originally asked for, internal paths only.
+    const from = new URLSearchParams(window.location.search).get("from");
+    const destination = from && from.startsWith("/") && !from.startsWith("//") && !from.startsWith("/login") ? from : "/";
 
     startTransition(async () => {
       try {
         await authApi.login(params);
-        router.push("/");
+        router.push(destination);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "Invalid credentials");
       }
