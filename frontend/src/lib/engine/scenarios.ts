@@ -38,6 +38,8 @@ export interface ScenarioDef {
   entry: string;
   targets: string[];
   hints: string[];
+  /** Response actions offered in the lab while the run is live. "attacker" means the run's source address. */
+  responses: { action: "isolate_host" | "block_ip" | "disable_account" | "waf_mode"; target: string; label: string }[];
   steps: StepDef[];
 }
 
@@ -56,6 +58,11 @@ export const SCENARIOS: ScenarioDef[] = [
     entry: "win-endpoint-01",
     targets: ["win-endpoint-01", "fs-lab-01"],
     hints: ["Isolate win-endpoint-01 before second 30 to stop lateral movement.", "Disable CORP\\svc_backup to make the PsExec step fail.", "Isolate fs-lab-01 to save the shadow copies."],
+    responses: [
+      { action: "isolate_host", target: "win-endpoint-01", label: "Isolate win-endpoint-01" },
+      { action: "disable_account", target: "CORP\\svc_backup", label: "Disable CORP\\svc_backup" },
+      { action: "isolate_host", target: "fs-lab-01", label: "Isolate fs-lab-01" },
+    ],
     steps: [
       {
         at: 2, label: "Invoice lure opened", detail: "OUTLOOK.EXE starts WINWORD.EXE with Q3_Invoice_4471.docm. Opening a document is normal, but the file hash is on the malware feed.", technique: "T1566.001", host: "win-endpoint-01", gate: { hosts: ["win-endpoint-01"] }, expect: ["intel_ioc_match"],
@@ -146,7 +153,12 @@ export const SCENARIOS: ScenarioDef[] = [
     attacker: "203.0.113.77",
     entry: "api-staging-01",
     targets: ["api-staging-01"],
-    hints: ["Switch the WAF for api-staging-01 to blocking mode on the WAF page.", "Or block 203.0.113.77 at the edge.", "Isolating api-staging-01 stops the shell, but only after the data has leaked."],
+    hints: ["Switch the WAF for api-staging-01 to blocking mode.", "Or block the attacking address at the edge.", "Isolating api-staging-01 stops the shell, but only after the data has leaked."],
+    responses: [
+      { action: "waf_mode", target: "api-staging-01", label: "Switch api-staging-01 WAF to blocking" },
+      { action: "block_ip", target: "attacker", label: "Block the attacker at the edge" },
+      { action: "isolate_host", target: "api-staging-01", label: "Isolate api-staging-01" },
+    ],
     steps: [
       {
         at: 2, span: 10, label: "Automated SQL injection scan", detail: "sqlmap probes /api/v1/products with boolean, time based and UNION payloads.", technique: "T1595.002", host: "api-staging-01", gate: { hosts: ["api-staging-01"] }, expect: ["web_scanner_ua", "waf_sqli", "intel_ioc_match"],
@@ -211,7 +223,12 @@ export const SCENARIOS: ScenarioDef[] = [
     attacker: "203.0.113.200",
     entry: "linux-jump-01",
     targets: ["linux-jump-01", "db-lab-01"],
-    hints: ["Block 203.0.113.200 as soon as the brute force alert fires.", "Disabling the deploy account stops the login.", "Isolating db-lab-01 cuts the DNS channel."],
+    hints: ["Block the attacking address as soon as the brute force alert fires.", "Disabling the deploy account stops the login.", "Isolating db-lab-01 cuts the DNS channel."],
+    responses: [
+      { action: "block_ip", target: "attacker", label: "Block the attacker at the edge" },
+      { action: "disable_account", target: "deploy", label: "Disable the deploy account" },
+      { action: "isolate_host", target: "db-lab-01", label: "Isolate db-lab-01" },
+    ],
     steps: [
       {
         at: 2, span: 12, label: "SSH password guessing", detail: "Around 30 failed passwords against deploy, admin and root in twelve seconds.", technique: "T1110.001", host: "linux-jump-01", gate: { hosts: ["linux-jump-01"], attackerIp: true }, expect: ["ssh_bruteforce"],

@@ -15,7 +15,7 @@ function ThreatRadar({ engine }: { engine: Engine }) {
   const cy = 150;
   const color = (state: string) => (state === "Compromised" ? "#f43f5e" : state === "At risk" ? "#f59e0b" : state === "Isolated" ? "#8b5cf6" : state === "Offline" ? "#64748b" : "#10b981");
   return (
-    <svg viewBox="0 0 300 300" className="h-full w-full" role="img" aria-label="Threat radar of lab assets">
+    <svg viewBox="0 0 300 300" className="h-full w-full overflow-visible" role="img" aria-label="Threat radar of lab assets">
       <defs>
         <radialGradient id="radarBg"><stop offset="0" stopColor="rgb(var(--glow))" stopOpacity=".10" /><stop offset="1" stopColor="rgb(var(--glow))" stopOpacity="0" /></radialGradient>
         <linearGradient id="sweepGrad" x1="0" x2="1"><stop offset="0" stopColor="rgb(var(--glow))" stopOpacity="0" /><stop offset="1" stopColor="rgb(var(--glow))" stopOpacity=".45" /></linearGradient>
@@ -40,7 +40,7 @@ function ThreatRadar({ engine }: { engine: Engine }) {
               <title>{`${a.hostname} · ${state} · risk ${engine.hostRisk(a.hostname)}`}</title>
               {(state === "Compromised" || state === "At risk") && <circle cx={x} cy={y} r="11" fill={c} opacity=".18"><animate attributeName="r" values="6;14;6" dur="2s" repeatCount="indefinite" /></circle>}
               <circle cx={x} cy={y} r="5" fill={c} stroke="var(--card)" strokeWidth="2" />
-              <text x={x} y={y + (y > cy ? 17 : -10)} textAnchor="middle" className="fill-muted-foreground font-mono text-[8px]">{a.hostname}</text>
+              <text x={x + Math.cos(angle) * 10} y={y + Math.sin(angle) * 12 + 3} textAnchor={Math.cos(angle) > 0.3 ? "start" : Math.cos(angle) < -0.3 ? "end" : "middle"} className="fill-muted-foreground font-mono text-[8px]">{a.hostname}</text>
             </g>
           </Link>
         );

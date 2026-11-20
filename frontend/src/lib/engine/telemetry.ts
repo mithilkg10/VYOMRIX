@@ -205,11 +205,11 @@ export function baselineSecond(em: Emitter) {
   const dnsHosts = ["win-endpoint-01", "analyst-ws-02", "fs-lab-01", "web-lab-01", "api-staging-01", "db-lab-01", "linux-jump-01"].filter(live);
   if (r() < 0.45 && dnsHosts.length) dns(em, { host: pick(r, dnsHosts), query: pick(r, BENIGN_DOMAINS), answer: pick(r, BENIGN_IPS) }, ms());
   if (r() < 0.003) dns(em, { host: "analyst-ws-02", query: `${hex(r, 40)}.d2x91.cloudfront.net` }, ms());
-  if (r() < 0.0012) dns(em, { host: "win-endpoint-01", query: `${hex(r, 36)}.edge.vendor-telemetry.example` }, ms());
+  if (r() < 0.0004) dns(em, { host: "win-endpoint-01", query: `${hex(r, 36)}.edge.vendor-telemetry.example` }, ms());
 
   // Web traffic, all of it passes through the WAF
-  if (live("web-lab-01") && r() < 0.35) { const p = pick(r, WEB_PATHS); em.web({ host: "web-lab-01", ip: `198.51.100.${int(r, 2, 250)}`, method: "GET", uri: p.uri, status: r() < 0.06 ? 304 : 200, bytes: p.bytes, ua: pick(r, UAS) }, ms()); }
-  if (live("api-staging-01") && r() < 0.18) { const p = pick(r, WEB_PATHS.filter((x) => x.uri.startsWith("/api"))); em.web({ host: "api-staging-01", ip: `198.51.100.${int(r, 2, 250)}`, method: "GET", uri: p.uri, status: 200, bytes: p.bytes, ua: pick(r, UAS) }, ms()); }
+  if (live("web-lab-01") && r() < 0.35) { const p = pick(r, WEB_PATHS); em.web({ host: "web-lab-01", ip: `198.51.100.${int(r, 2, 60)}`, method: "GET", uri: p.uri, status: r() < 0.06 ? 304 : 200, bytes: p.bytes, ua: pick(r, UAS) }, ms()); }
+  if (live("api-staging-01") && r() < 0.18) { const p = pick(r, WEB_PATHS.filter((x) => x.uri.startsWith("/api"))); em.web({ host: "api-staging-01", ip: `198.51.100.${int(r, 2, 60)}`, method: "GET", uri: p.uri, status: 200, bytes: p.bytes, ua: pick(r, UAS) }, ms()); }
   if (r() < 0.006) { const probe = pick(r, SCAN_PROBES); em.web({ host: "web-lab-01", ip: `203.0.113.${int(r, 100, 140)}`, method: "GET", uri: probe.uri, status: 404, bytes: 512, ua: probe.ua }, ms()); }
 
   // SSH: bastion gets background internet noise, honeypot gets the real flood

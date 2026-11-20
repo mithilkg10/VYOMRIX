@@ -29,9 +29,13 @@ function RunView({ engine, run }: { engine: Engine; run: ScenarioRun }) {
   const detected = executed.filter((s) => s.detectedBy.length > 0);
   const done = run.steps.filter((s) => s.state !== "pending" && s.state !== "running").length;
   const incident = run.incidentId ? engine.incidentById.get(run.incidentId) : undefined;
-  const plan = incident ? engine.containmentPlan(incident) : [];
-  const events = engine.events.filter((e) => e.run === run.id).slice(-14);
   const def = engine.scenarios.find((s) => s.id === run.scenarioId);
+  const isDone = (action: string, target: string) => action === "isolate_host" ? engine.world.isolated.has(target) : action === "block_ip" ? engine.world.blockedIps.has(target) : action === "disable_account" ? engine.world.disabled.has(target) : engine.world.wafMode[target] === "blocking";
+  const responses = [
+    ...(def?.responses ?? []).map((r) => { const target = r.target === "attacker" ? run.attacker : r.target; return { action: r.action, target, label: r.target === "attacker" ? `Block ${run.attacker} at the edge` : r.label, done: isDone(r.action, target) }; }),
+    ...(incident ? engine.containmentPlan(incident) : []),
+  ].filter((p, i, all) => all.findIndex((q) => q.action === p.action && q.target === p.target) === i);
+  const events = engine.events.filter((e) => e.run === run.id).slice(-14);
   return (
     <Panel glow={run.status === "running"} title={<span className="flex flex-wrap items-center gap-2"><span className="font-mono text-xs text-muted-foreground">{run.id}</span>{run.name}<StatusBadge status={run.status} label={run.status === "completed" ? "attack completed" : run.status === "contained" ? "attack stopped" : "in progress"} /></span>}
       subtitle={`Attacker ${run.attacker} · started ${fmtTime(run.startSec * 1000)} · ${detected.length} of ${executed.length} executed steps detected`}
@@ -75,20 +79,13 @@ function RunView({ engine, run }: { engine: Engine; run: ScenarioRun }) {
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Respond</p>
             {run.status !== "running" ? (
               <p className="mt-2 text-sm">{run.status === "contained" ? "The chain was broken. Review the incident and close it out." : "The attack ran to completion. Open the incident to investigate and contain."}</p>
-            ) : !incident ? (
-              <p className="mt-2 text-sm text-muted-foreground">No incident yet. Containment options appear as soon as the first high severity alert fires.</p>
             ) : (
               <div className="mt-3 space-y-2">
-                {plan.map((p) => (
-                  <Btn key={p.action + p.target} size="sm" variant={p.done ? "success" : "danger"} disabled={p.done} className="w-full justify-start" onClick={() => act({ kind: "action", action: p.action, target: p.target, incident: incident.id, actor: ANALYST }, `${p.label} done`)}>
+                {responses.map((p) => (
+                  <Btn key={p.action + p.target} size="sm" variant={p.done ? "success" : "danger"} disabled={p.done} className="w-full justify-start" onClick={() => act({ kind: "action", action: p.action, target: p.target, mode: p.action === "waf_mode" ? "blocking" : undefined, incident: incident?.id, actor: ANALYST }, `${p.label} done`)}>
                     {p.done ? <ShieldCheck /> : <ShieldOff />}{p.done ? `${p.label} (done)` : p.label}
                   </Btn>
                 ))}
-                {run.scenarioId === "web-compromise" && (
-                  <Btn size="sm" variant={engine.world.wafMode["api-staging-01"] === "blocking" ? "success" : "danger"} disabled={engine.world.wafMode["api-staging-01"] === "blocking"} className="w-full justify-start" onClick={() => act({ kind: "action", action: "waf_mode", target: "api-staging-01", mode: "blocking", incident: incident.id, actor: ANALYST }, "WAF switched to blocking on api-staging-01")}>
-                    <ShieldCheck />Switch api-staging-01 WAF to blocking
-                  </Btn>
-                )}
               </div>
             )}
             {def && run.status === "running" && <ul className="mt-3 space-y-1 border-t pt-3 text-[11px] leading-4 text-muted-foreground">{def.hints.map((h) => <li key={h}>· {h}</li>)}</ul>}

@@ -19,7 +19,8 @@ export type JournalEntry =
   | { t: number; kind: "incident_status"; incident?: string; run?: string; status: IncidentStatus; actor: string }
   | { t: number; kind: "note"; incident?: string; run?: string; text: string; actor: string }
   | { t: number; kind: "alert"; alert: string; status?: AlertStatus; verdict?: Verdict; actor: string }
-  | { t: number; kind: "assign"; incident: string; assignee: string; actor: string };
+  | { t: number; kind: "assign"; incident: string; assignee: string; actor: string }
+  | { t: number; kind: "bulk_verdict"; rule?: string; run?: string; verdict: Verdict; actor: string };
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 export type JournalInput = DistributiveOmit<JournalEntry, "t">;
@@ -91,6 +92,7 @@ const ALERT_DEDUP_MS = 10 * 60_000;
 const INCIDENT_WINDOW_MS = 30 * 60_000;
 const NON_PERSON = /^(nt authority\\system|localsystem|system|www-data|root)$/i;
 const WEIGHT: Record<Severity, number> = { informational: 0, low: 4, medium: 12, high: 25, critical: 40 };
+const RISK_WEIGHT: Record<Severity, number> = { informational: 0, low: 2, medium: 8, high: 25, critical: 40 };
 
 const TITLE_ORDER: [string, string][] = [
   ["impact", "Ransomware staging"],
@@ -120,6 +122,7 @@ export function seedJournal(start: number): JournalEntry[] {
     { t: start + 1500, kind: "note", run: "RUN-1", text: "api-staging-01 rebuilt from the golden image. All credentials in the users table rotated. Change CHG-2291 raised to move the staging WAF to blocking mode.", actor: a },
     { t: start + 1502, kind: "action", action: "release_host", target: "api-staging-01", run: "RUN-1", actor: a },
     { t: start + 1505, kind: "incident_status", run: "RUN-1", status: "resolved", actor: a },
+    { t: start + 1510, kind: "bulk_verdict", run: "RUN-1", verdict: "true_positive", actor: a },
     { t: start + 2900, kind: "scenario", scenario: "ssh-exfil", attacker: "203.0.113.214" },
     { t: start + 2980, kind: "incident_status", run: "RUN-2", status: "investigating", actor: a },
     { t: start + 2990, kind: "action", action: "block_ip", target: "203.0.113.214", run: "RUN-2", actor: a },
@@ -127,6 +130,11 @@ export function seedJournal(start: number): JournalEntry[] {
     { t: start + 2995, kind: "incident_status", run: "RUN-2", status: "contained", actor: a },
     { t: start + 3000, kind: "note", run: "RUN-2", text: "DNS exfiltration stopped by isolating db-lab-01. Roughly 30 queries left before isolation. Next: confirm how the deploy key was reused and rotate it.", actor: a },
     { t: start + 3600, kind: "action", action: "release_host", target: "db-lab-01", run: "RUN-2", actor: a },
+    { t: start + 3610, kind: "bulk_verdict", run: "RUN-2", verdict: "true_positive", actor: a },
+    { t: start + 3620, kind: "bulk_verdict", rule: "domain_discovery", verdict: "false_positive", actor: a },
+    { t: start + 3630, kind: "bulk_verdict", rule: "schtasks_create", verdict: "benign", actor: a },
+    { t: start + 3640, kind: "bulk_verdict", rule: "db_archive_staging", verdict: "false_positive", actor: a },
+    { t: start + 3650, kind: "bulk_verdict", rule: "dns_long_label", verdict: "false_positive", actor: a },
   ];
 }
 
@@ -553,6 +561,15 @@ export class Engine {
         if (inc) { inc.assignee = entry.assignee; inc.notes.push({ ts, author: entry.actor, text: `Assigned to ${entry.assignee}.`, kind: "status" }); }
         return;
       }
+      case "bulk_verdict": {
+        const ruleId = entry.rule ? this.ruleByName.get(entry.rule)?.id : undefined;
+        for (const a of this.alerts) {
+          if (a.verdict || a.status === "closed") continue;
+          if (entry.run ? a.run !== entry.run : a.run || a.ruleId !== ruleId) continue;
+          this.apply({ t: entry.t, kind: "alert", alert: a.id, verdict: entry.verdict, actor: entry.actor });
+        }
+        return;
+      }
       case "alert": {
         const alert = this.alertById.get(entry.alert);
         if (!alert) return;
@@ -609,8 +626,14 @@ export class Engine {
 
   // ---- read helpers ------------------------------------------------------------------
   hostRisk(host: string, now = this.lastSec * 1000) {
-    const recent = this.alerts.filter((a) => a.hosts.includes(host) && a.verdict !== "false_positive" && now - a.lastTs < 3_600_000);
-    return Math.min(100, recent.reduce((s, a) => s + WEIGHT[a.level], 0));
+    // One contribution per distinct detection, so a noisy rule cannot inflate the score on its own.
+    const byRule = new Map<string, number>();
+    for (const a of this.alerts) {
+      if (!a.hosts.includes(host) || a.verdict === "false_positive" || a.verdict === "benign" || now - a.lastTs >= 3_600_000) continue;
+      if (a.incidentId && this.incidentById.get(a.incidentId)?.status === "resolved") continue;
+      byRule.set(a.ruleId, Math.max(byRule.get(a.ruleId) ?? 0, RISK_WEIGHT[a.level]));
+    }
+    return Math.min(100, [...byRule.values()].reduce((s, w) => s + w, 0));
   }
 
   hostState(host: string) {

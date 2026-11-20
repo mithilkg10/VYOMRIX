@@ -138,7 +138,7 @@ function EngineStatus() {
   const last = [1, 2, 3].map((k) => engine.minutes.get(minute - k)?.events ?? 0);
   const eps = last.reduce((s, x) => s + x, 0) / 180;
   return (
-    <div className="hidden items-center gap-2 rounded-lg border bg-card px-2.5 py-1.5 md:flex">
+    <div className="hidden items-center gap-2 whitespace-nowrap rounded-lg border bg-card px-2.5 py-1.5 xl:flex">
       <span className={paused ? "h-2 w-2 rounded-full bg-amber-500" : "live-dot"} />
       <span className="text-xs font-medium">{paused ? "Engine paused" : "Engine live"}</span>
       <span className="font-mono text-[11px] text-muted-foreground">{eps.toFixed(1)} ev/s</span>
@@ -262,7 +262,7 @@ export function ConsoleShell({ mode, children }: { mode: Mode; children: ReactNo
           </button>
           <div className="ml-auto flex items-center gap-2">
             <EngineStatus />
-            <Link href="/lab" className="interactive hidden h-9 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-[0_8px_24px_-10px_rgb(var(--glow))] hover:brightness-110 sm:inline-flex"><Swords className="h-4 w-4" />Launch attack</Link>
+            <Link href="/lab" className="interactive hidden h-9 items-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-[0_8px_24px_-10px_rgb(var(--glow))] hover:brightness-110 sm:inline-flex"><Swords className="h-4 w-4" />Launch attack</Link>
             <AlertBell />
             <ThemeToggle />
           </div>
