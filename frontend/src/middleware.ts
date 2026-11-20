@@ -33,19 +33,20 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/reset-password");
   const isDemoEntry = pathname === "/demo-login";
   const isDemoExit = pathname === "/demo-logout";
-  const isDemoWorkspace = pathname === "/demo";
+  const isLegacyDemo = pathname === "/demo";
+  const isOwnerOnly = pathname === "/settings" || pathname.startsWith("/settings/");
 
   const hasValidAccess = Boolean(accessToken && !tokenHasExpired(accessToken));
   const hasRefresh = Boolean(refreshToken);
   const hasDemoSession = await verifyDemoSessionToken(demoToken).catch(() => false);
   const hasOwnerSession = await verifyOwnerSessionToken(ownerToken).catch(() => false);
 
-  if (hasDemoSession && !isDemoWorkspace && !isDemoEntry && !isDemoExit) {
-    return NextResponse.redirect(new URL("/demo", request.url));
+  if (isLegacyDemo) {
+    return NextResponse.redirect(new URL(hasDemoSession || hasOwnerSession ? "/" : "/login", request.url));
   }
 
-  if (isDemoWorkspace && !hasDemoSession) {
-    return NextResponse.redirect(new URL(hasOwnerSession ? "/" : "/login", request.url));
+  if (hasDemoSession && isOwnerOnly) {
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   if (!hasValidAccess && !hasRefresh && !hasDemoSession && !hasOwnerSession && !isAuthPage && !isDemoEntry && !isDemoExit) {
@@ -57,7 +58,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if ((hasValidAccess || hasDemoSession || hasOwnerSession) && isAuthPage) {
-    return NextResponse.redirect(new URL(hasDemoSession ? "/demo" : "/", request.url));
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return NextResponse.next();

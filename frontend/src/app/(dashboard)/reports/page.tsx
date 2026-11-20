@@ -1,10 +1,138 @@
 "use client";
-import { FormEvent, useState } from "react";
-import { FileText } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ErrorState, IntegrationUnavailableState, UnauthorizedState } from "@/components/system/feedback";
-import { PageContainer, PageHeader } from "@/components/system/page";
-import { ApiError } from "@/lib/api/client";
-import { type ReportFormat, type ReportResponse, generateReport } from "@/lib/api/reports";
-export default function ReportsPage() { const [incidentId, setIncidentId] = useState("INC-001"); const [format, setFormat] = useState<ReportFormat>("html"); const [result, setResult] = useState<ReportResponse | null>(null); const [error, setError] = useState<ApiError | null>(null); const [pending, setPending] = useState(false); const submit = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); if (!incidentId.trim() || pending) return; setPending(true); setError(null); setResult(null); try { setResult(await generateReport(incidentId.trim(), format)); } catch (cause) { setError(cause instanceof ApiError ? cause : new ApiError("Report generation could not be completed.", 500)); } finally { setPending(false); } }; return <PageContainer><PageHeader title="Reports" description="Generate a report from a real incident record. No report history or scheduled delivery is configured." /><section className="panel p-5"><h2 className="font-semibold">Generate incident report</h2><form className="mt-4 flex flex-col gap-3 sm:flex-row" onSubmit={submit}><div className="flex-1"><label className="sr-only" htmlFor="report-incident">Incident ID</label><Input id="report-incident" value={incidentId} onChange={(event) => setIncidentId(event.target.value)} placeholder="Incident ID" required disabled={pending} /></div><select className="h-10 rounded-md border bg-background px-3" value={format} onChange={(event) => setFormat(event.target.value as ReportFormat)} disabled={pending} aria-label="Report format"><option value="pdf">PDF</option><option value="html">HTML</option></select><Button type="submit" disabled={pending}><FileText aria-hidden="true" />{pending ? "Generating…" : "Generate"}</Button></form></section>{error?.status === 401 && <UnauthorizedState />}{error && error.status !== 401 && (error.status >= 502 ? <IntegrationUnavailableState integrationName="Reports" reason="The report service did not respond." guidance="Try again later." /> : <ErrorState title="Report unavailable" description="The report could not be generated." />)}{result && <section className="panel p-5"><h2 className="font-semibold">Report generated</h2><p className="mt-1 text-sm text-muted-foreground">The server generated a {result.format.toUpperCase()} report for {result.incident_id}.</p><Button className="mt-4" render={<a href={`/api/${result.download_url.replace(/^\/api\/v1\//, "")}`}>Download report</a>} /></section>}</PageContainer>; }
+
+import { Suspense, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FileDown, FileJson, FileText } from "lucide-react";
+import { useEngine } from "@/lib/engine/use-engine";
+import type { Engine } from "@/lib/engine/engine";
+import { buildReportPdf, type ReportDoc } from "@/lib/engine/report-pdf";
+import { tacticName, techniqueName } from "@/lib/engine/attack";
+import type { Incident } from "@/lib/engine/types";
+import { Btn, Empty, Loading, Page, PageHeader, Panel, Select, dur, fmtDateTime } from "@/components/console/kit";
+
+const ADVICE: Record<string, string> = {
+  "initial-access": "Review exposure of the entry point: patch or retire the vulnerable service and require MFA on remote access.",
+  execution: "Enforce PowerShell Constrained Language Mode and script block logging; block Office child processes with an ASR rule.",
+  persistence: "Hunt for other web shells and scheduled tasks across the fleet, and rebuild affected hosts from a known good image.",
+  "credential-access": "Reset every credential that was present on the affected hosts, including service accounts, and enable LSA protection.",
+  discovery: "Alert on domain enumeration from non admin workstations and restrict who can query group membership.",
+  "lateral-movement": "Remove local admin rights from service accounts and block SMB and remote service creation between workstations and servers.",
+  "command-and-control": "Block the listed infrastructure at the egress proxy and DNS resolver, and review other hosts for the same destinations.",
+  exfiltration: "Cap DNS label length and query volume at the resolver and alert on large responses leaving the server VLAN.",
+  impact: "Confirm backups are offline and immutable, and alert on shadow copy deletion on every server.",
+  collection: "Restrict who can run database dumps and alert on archives written to hidden temporary folders.",
+  "defense-evasion": "Protect Defender settings with tamper protection and forward Security logs off host in real time.",
+};
+
+function incidentDoc(engine: Engine, inc: Incident): ReportDoc {
+  const alerts = inc.alertIds.map((id) => engine.alertById.get(id)!).filter(Boolean).sort((a, b) => a.ts - b.ts);
+  const actions = inc.notes.filter((n) => n.kind === "action");
+  const run = engine.runs.find((r) => r.incidentId === inc.id);
+  return {
+    title: `Incident report ${inc.id}`,
+    subtitle: inc.title,
+    badge: `${inc.severity.toUpperCase()} | ${inc.status.toUpperCase()}`,
+    meta: [["First activity", fmtDateTime(inc.firstActivity)], ["Detected", fmtDateTime(inc.createdAt)], ["Time to detect", dur(inc.createdAt - inc.firstActivity)], ["Contained", inc.containedAt ? fmtDateTime(inc.containedAt) : "Not yet"], ["Time to contain", inc.containedAt ? dur(inc.containedAt - inc.createdAt) : "Open"], ["Risk score", `${inc.riskScore} / 100`]],
+    sections: [
+      { heading: "Executive summary", paragraphs: [
+        `${inc.title}. The detection pipeline raised ${alerts.length} alerts across ${inc.hosts.length} host${inc.hosts.length > 1 ? "s" : ""} covering ${inc.tactics.length} ATT&CK tactics (${inc.tactics.map(tacticName).join(", ")}).`,
+        inc.containedAt ? `The incident was contained ${dur(inc.containedAt - inc.createdAt)} after detection by ${inc.assignee}.` : "The incident has not been contained at the time of this report.",
+        run ? `The activity was produced by Attack Lab run ${run.id} (${run.name}) from ${run.attacker}. ${run.steps.filter((s) => s.detectedBy.length).length} of ${run.steps.filter((s) => s.state === "executed").length} executed steps were detected and ${run.steps.filter((s) => s.state === "prevented").length} were prevented by response actions.` : "",
+      ].filter(Boolean) },
+      { heading: "Affected entities", bullets: [`Hosts: ${inc.hosts.join(", ")}`, `Accounts: ${inc.users.join(", ") || "none identified"}`, `External addresses: ${inc.ips.join(", ") || "none"}`] },
+      { heading: "Detection timeline", table: { columns: ["Time", "Severity", "Detection", "Host", "Count"], widths: [1.1, 0.8, 3.2, 1.3, 0.6], rows: alerts.map((a) => [fmtDateTime(a.ts), a.level, a.ruleTitle, a.host, String(a.count)]) } },
+      { heading: "MITRE ATT&CK techniques", bullets: inc.techniques.map((t) => `${t} ${techniqueName(t)}`) },
+      { heading: "Response actions", bullets: actions.length ? actions.map((n) => `${fmtDateTime(n.ts)} ${n.author}: ${n.text}`) : ["No response actions recorded."] },
+      { heading: "Analyst notes", bullets: inc.notes.filter((n) => n.kind === "note").map((n) => `${fmtDateTime(n.ts)} ${n.author}: ${n.text}`).concat(inc.notes.some((n) => n.kind === "note") ? [] : ["No notes recorded."]) },
+      { heading: "Recommendations", bullets: inc.tactics.map((t) => ADVICE[t]).filter(Boolean) },
+      { heading: "Scope", paragraphs: ["Generated by the VYOMRIX detection engine from synthetic lab telemetry. The detection logic, correlation and response decisions are real; the hosts and events are simulated."] },
+    ],
+    footer: `VYOMRIX incident report ${inc.id} | generated ${new Date().toLocaleString("en-GB")}`,
+  };
+}
+
+function shiftDoc(engine: Engine): ReportDoc {
+  const now = engine.lastSec * 1000;
+  const from = engine.startSec * 1000;
+  const top = [...engine.stats.entries()].filter(([, s]) => s.alerts > 0).sort((a, b) => b[1].alerts - a[1].alerts).slice(0, 10);
+  const ttd = engine.incidents.map((i) => i.createdAt - i.firstActivity);
+  const ttc = engine.incidents.filter((i) => i.containedAt).map((i) => i.containedAt! - i.createdAt);
+  const avg = (x: number[]) => (x.length ? x.reduce((s, v) => s + v, 0) / x.length : NaN);
+  return {
+    title: "SOC shift report",
+    subtitle: `${fmtDateTime(from)} to ${fmtDateTime(now)}`,
+    badge: `${engine.incidents.filter((i) => i.status === "new" || i.status === "investigating").length} OPEN INCIDENTS`,
+    meta: [["Events processed", engine.totalEvents.toLocaleString("en-GB")], ["Alerts raised", String(engine.alerts.length)], ["Incidents", String(engine.incidents.length)], ["Mean time to detect", dur(avg(ttd))], ["Mean time to contain", dur(avg(ttc))], ["Response actions", String(engine.audit.length)]],
+    sections: [
+      { heading: "Summary", paragraphs: [`During this window the engine processed ${engine.totalEvents.toLocaleString("en-GB")} events from ${engine.assets.length} hosts through ${engine.rules.length} Sigma rules, the WAF and the intel store. ${engine.alerts.length} alerts were raised and grouped into ${engine.incidents.length} incidents.`] },
+      { heading: "Incidents", table: { columns: ["ID", "Severity", "Status", "Title", "Detect", "Contain"], widths: [0.8, 0.8, 0.9, 3.4, 0.8, 0.9], rows: engine.incidents.map((i) => [i.id, i.severity, i.status, i.title, dur(i.createdAt - i.firstActivity), i.containedAt ? dur(i.containedAt - i.createdAt) : "open"]) } },
+      { heading: "Noisiest detections", table: { columns: ["Rule", "Alerts", "Matches", "True pos.", "False pos."], widths: [3.6, 0.8, 0.8, 0.8, 0.8], rows: top.map(([n, s]) => [engine.ruleByName.get(n)?.title ?? "Threat Intel Indicator Match", String(s.alerts), String(s.hits), String(s.tp), String(s.fp)]) } },
+      { heading: "Containment in force", bullets: [`Isolated hosts: ${[...engine.world.isolated].join(", ") || "none"}`, `Blocked addresses: ${[...engine.world.blockedIps].join(", ") || "none"}`, `Disabled accounts: ${[...engine.world.disabled].join(", ") || "none"}`, `WAF modes: ${Object.entries(engine.world.wafMode).map(([h, m]) => `${h} ${m}`).join(", ")}`] },
+      { heading: "Scope", paragraphs: ["Synthetic lab telemetry processed by real detection logic."] },
+    ],
+    footer: `VYOMRIX shift report | generated ${new Date().toLocaleString("en-GB")}`,
+  };
+}
+
+function save(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function Reports() {
+  const engine = useEngine();
+  const params = useSearchParams();
+  const router = useRouter();
+  const target = params.get("incident") ?? "shift";
+  const v = engine?.version ?? 0;
+  const doc = useMemo(() => {
+    if (!engine) return null;
+    const inc = target !== "shift" ? engine.incidentById.get(target) : undefined;
+    return inc ? incidentDoc(engine, inc) : shiftDoc(engine);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engine, v, target]);
+  if (!engine || !doc) return <Loading />;
+  const slug = target === "shift" ? "shift-report" : `incident-${target}`;
+  return (
+    <Page>
+      <PageHeader eyebrow="Reporting" title="Reports" description="Reports are written from the live engine state at the moment you open them, then exported as PDF or JSON in the browser. Nothing is sent to a server."
+        actions={<>
+          <Select label="Report" value={target} onChange={(t) => router.replace(t === "shift" ? "/reports" : `/reports?incident=${t}`, { scroll: false })} options={[{ value: "shift", label: "SOC shift report" }, ...[...engine.incidents].reverse().map((i) => ({ value: i.id, label: `${i.id} ${i.title.slice(0, 40)}` }))]} className="max-w-xs" />
+          <Btn onClick={() => save(new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" }), `vyomrix-${slug}.json`)}><FileJson />JSON</Btn>
+          <Btn variant="primary" onClick={() => save(buildReportPdf(doc), `vyomrix-${slug}.pdf`)}><FileDown />Download PDF</Btn>
+        </>} />
+      <article className="panel mx-auto max-w-4xl overflow-hidden">
+        <header className="relative overflow-hidden bg-[#06101f] p-8 text-white">
+          <div className="absolute inset-x-0 bottom-0 h-1 bg-cyan-400" />
+          <p className="text-xs font-bold tracking-[.2em] text-cyan-300">VYOMRIX <span className="font-normal tracking-normal text-slate-400">Detection and response platform</span></p>
+          <h2 className="mt-3 text-2xl font-semibold">{doc.title}</h2>
+          <p className="mt-1 text-sm text-slate-300">{doc.subtitle}</p>
+          <span className="absolute right-8 top-8 rounded bg-cyan-400 px-2.5 py-1 text-[11px] font-bold text-slate-950">{doc.badge}</span>
+        </header>
+        <div className="grid grid-cols-2 gap-4 border-b p-6 sm:grid-cols-3">{doc.meta.map(([k, val]) => <div key={k}><p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{k}</p><p className="mt-0.5 text-sm font-semibold">{val}</p></div>)}</div>
+        <div className="space-y-7 p-6">
+          {doc.sections.map((s) => (
+            <section key={s.heading}>
+              <h3 className="border-b pb-1.5 text-sm font-semibold text-primary">{s.heading}</h3>
+              {s.paragraphs?.map((p, i) => <p key={i} className="mt-2 text-[13.5px] leading-6">{p}</p>)}
+              {s.bullets && <ul className="mt-2 space-y-1.5">{s.bullets.map((b, i) => <li key={i} className="flex gap-2 text-[13px] leading-5"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-sm bg-cyan-400" />{b}</li>)}</ul>}
+              {s.table && (s.table.rows.length === 0 ? <p className="mt-2 text-xs text-muted-foreground">No rows.</p> : (
+                <div className="mt-2 overflow-x-auto"><table className="w-full text-left text-xs"><thead className="bg-muted/60 text-[10px] uppercase tracking-wider text-muted-foreground"><tr>{s.table.columns.map((c) => <th key={c} className="px-2 py-1.5">{c}</th>)}</tr></thead><tbody>{s.table.rows.map((r, i) => <tr key={i} className="border-b">{r.map((cell, j) => <td key={j} className="px-2 py-1.5">{cell}</td>)}</tr>)}</tbody></table></div>
+              ))}
+            </section>
+          ))}
+        </div>
+        <footer className="flex items-center gap-2 border-t px-6 py-3 text-[11px] text-muted-foreground"><FileText className="h-3.5 w-3.5" />{doc.footer}</footer>
+      </article>
+      {engine.incidents.length === 0 && <Empty title="No incidents yet">Launch a scenario to generate an incident report.</Empty>}
+    </Page>
+  );
+}
+
+export default function ReportsPage() {
+  return <Suspense fallback={<Loading />}><Reports /></Suspense>;
+}

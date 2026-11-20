@@ -5,9 +5,8 @@ import { ReactNode } from 'react'
 
 // Mock next/font to prevent errors during test
 vi.mock('next/font/google', () => ({
-  Inter: () => ({
-    className: 'mocked-inter',
-  }),
+  Inter: () => ({ className: 'mocked-inter', variable: '--font-inter' }),
+  JetBrains_Mono: () => ({ className: 'mocked-mono', variable: '--font-jetbrains' }),
 }))
 
 describe('RootLayout Boundary', () => {

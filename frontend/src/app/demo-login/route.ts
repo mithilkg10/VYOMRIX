@@ -5,7 +5,7 @@ const DEMO_TTL_SECONDS = 30 * 60;
 
 async function startDemo(request: Request) {
   const token = await createDemoSessionToken(DEMO_TTL_SECONDS);
-  const response = NextResponse.redirect(new URL("/demo", request.url), 303);
+  const response = NextResponse.redirect(new URL("/", request.url), 303);
 
   response.cookies.set(DEMO_COOKIE_NAME, token, {
     path: "/",
