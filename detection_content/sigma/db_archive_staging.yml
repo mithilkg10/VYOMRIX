@@ -1,0 +1,29 @@
+title: Database Dump Archived in Hidden Temp Folder
+id: 4f5a6b7c-8d9e-4f0a-8b1c-2d3e4f5a6b29
+name: db_archive_staging
+status: test
+description: pg_dump output or a tar archive written to a hidden folder under /tmp, a staging step before exfiltration.
+author: Mithil K Gowda
+date: 2026/10/13
+logsource:
+  product: linux
+  category: process_creation
+detection:
+  selection_tool:
+    Image|endswith:
+      - '/tar'
+      - '/pg_dump'
+      - '/zip'
+  selection_path:
+    CommandLine|re: '/tmp/\.[a-z0-9_]+/'
+  filter_backup:
+    User: 'svc_backup'
+    CommandLine|contains: '/tmp/.backup_stage/'
+  condition: all of selection_* and not filter_backup
+falsepositives:
+  - Backup jobs, which write to /tmp/.backup_stage and are filtered
+level: medium
+tags:
+  - attack.collection
+  - attack.t1560.001
+  - attack.t1005

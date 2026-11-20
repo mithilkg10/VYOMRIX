@@ -42,7 +42,7 @@ test.describe('Vyomrix End-to-End Test Suite', () => {
     ]);
     
     // Wait for the UI to load
-    await expect(page.locator('h1').filter({ hasText: /^Dashboard$|^Security Overview$/ })).toBeVisible();
+    await expect(page.locator('h1').filter({ hasText: /Detect, investigate and contain/ })).toBeVisible();
     const refreshToken = (await page.context().cookies()).find((cookie) => cookie.name === 'refresh_token')?.value;
     expect(refreshToken).toBeTruthy();
     await page.context().clearCookies({ name: 'access_token' });
@@ -55,7 +55,7 @@ test.describe('Vyomrix End-to-End Test Suite', () => {
     }
     
     // Test Logout
-    await page.getByRole('button', { name: 'Logout' }).click();
+    await page.getByRole('button', { name: 'Sign out' }).click();
     await expect(page).toHaveURL(/.*\/login/);
     await page.goto('/');
     await expect(page).toHaveURL(/.*\/login/);
@@ -97,5 +97,16 @@ test.describe('Vyomrix End-to-End Test Suite', () => {
       // Every valid page or error state renders an h1 or h2.
       await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 10000 });
     }
+  });
+});
+
+test.describe('Recruiter demo', () => {
+  test('opens the console and detects a launched attack', async ({ page }) => {
+    await page.goto('/demo-login');
+    await expect(page.locator('h1').filter({ hasText: /Detect, investigate and contain/ })).toBeVisible();
+    await page.goto('/lab');
+    await page.locator('#phish-ransom').getByRole('button', { name: /Launch scenario/ }).click();
+    await expect(page.getByText(/Detected in .* by/).first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('Office Application Spawning a Script Interpreter').first()).toBeVisible();
   });
 });

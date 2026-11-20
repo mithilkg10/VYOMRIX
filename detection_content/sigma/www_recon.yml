@@ -1,0 +1,21 @@
+title: Reconnaissance Commands by Web Service Account
+id: 1c2d3e4f-5a6b-4c7d-8e8f-9a0b1c2d3e26
+name: www_recon
+status: test
+description: Discovery commands executed as www-data.
+author: Mithil K Gowda
+date: 2026/10/12
+logsource:
+  product: linux
+  category: process_creation
+detection:
+  selection_user:
+    User: 'www-data'
+  selection_cmd:
+    CommandLine|re: '(^|[;&| ])(id|whoami|uname -a|hostname|cat /etc/passwd)($|[;&| ])'
+  condition: all of selection_*
+level: medium
+tags:
+  - attack.discovery
+  - attack.t1033
+  - attack.t1082

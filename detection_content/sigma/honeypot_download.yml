@@ -1,0 +1,22 @@
+title: Honeypot Shell Session With Payload Download
+id: 4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f39
+name: honeypot_download
+status: stable
+description: An attacker who logged in to the SSH honeypot tried to download a payload.
+author: Mithil K Gowda
+date: 2026/10/17
+logsource:
+  product: vyomrix
+  service: honeypot
+detection:
+  selection:
+    Event: 'command'
+    Command|contains:
+      - 'wget '
+      - 'curl '
+      - 'tftp '
+  condition: selection
+level: medium
+tags:
+  - attack.command-and-control
+  - attack.t1105

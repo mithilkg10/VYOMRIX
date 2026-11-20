@@ -1,0 +1,21 @@
+title: SQL Injection Returned Data
+id: 8d9e0f1a-2b3c-4d4e-8f5a-6b7c8d9e0f33
+name: sqli_success
+status: stable
+description: A UNION SELECT style payload answered with HTTP 200 and a body larger than normal, which means the injection most likely worked.
+author: Mithil K Gowda
+date: 2026/10/15
+logsource:
+  category: webserver
+detection:
+  selection:
+    cs-uri-query|contains|all:
+      - 'union'
+      - 'select'
+    sc-status: 200
+    sc-bytes|gte: 4000
+  condition: selection
+level: critical
+tags:
+  - attack.initial-access
+  - attack.t1190

@@ -1,0 +1,20 @@
+title: Windows Logon Brute Force
+id: 2f3a4b5c-6d7e-4f8a-8b9c-0d1e2f3a4b17
+name: win_bruteforce
+status: stable
+description: Ten or more failed logons from one source address within five minutes.
+author: Mithil K Gowda
+date: 2026/10/09
+correlation:
+  type: event_count
+  rules:
+    - win_failed_logon
+  group-by:
+    - IpAddress
+  timespan: 5m
+  condition:
+    gte: 10
+level: high
+tags:
+  - attack.credential-access
+  - attack.t1110.001

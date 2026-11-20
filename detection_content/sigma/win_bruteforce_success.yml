@@ -1,0 +1,21 @@
+title: Windows Brute Force Followed by Successful Logon
+id: 4b5c6d7e-8f9a-4b0c-8d1e-2f3a4b5c6d19
+name: win_bruteforce_success
+status: stable
+description: A brute force burst and then a successful network logon from the same address within fifteen minutes. Treat the account as compromised.
+author: Mithil K Gowda
+date: 2026/10/09
+correlation:
+  type: temporal_ordered
+  rules:
+    - win_bruteforce
+    - win_network_logon
+  group-by:
+    - IpAddress
+  timespan: 15m
+level: critical
+tags:
+  - attack.initial-access
+  - attack.credential-access
+  - attack.t1078
+  - attack.t1110.001

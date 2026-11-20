@@ -1,0 +1,25 @@
+title: Web Shell Uploaded
+id: 9e0f1a2b-3c4d-4e5f-8a6b-7c8d9e0f1a34
+name: webshell_upload
+status: test
+description: A server side script file accepted by an upload endpoint, followed by requests to it with a cmd parameter.
+author: Mithil K Gowda
+date: 2026/10/15
+logsource:
+  category: webserver
+detection:
+  selection_upload:
+    cs-method: 'POST'
+    cs-uri-stem|contains: '/upload'
+    cs-uri-query|re: 'filename=[^&]+\.(php|phtml|jsp|aspx)'
+    sc-status:
+      - 200
+      - 201
+  selection_exec:
+    cs-uri-stem|re: '/uploads/[^/]+\.(php|phtml|jsp|aspx)$'
+    cs-uri-query|startswith: 'cmd='
+  condition: 1 of selection_*
+level: high
+tags:
+  - attack.persistence
+  - attack.t1505.003

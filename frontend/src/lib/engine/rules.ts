@@ -1,6 +1,6 @@
 // Detection content. Every rule is plain Sigma YAML and is compiled by ./sigma.ts at
 // runtime, so the rule text shown in the console is exactly what the engine executes.
-// The same files are exported to detection-content/sigma for the Python test suite.
+// The same files are exported to detection_content/sigma for the Python test suite.
 
 const R = String.raw;
 

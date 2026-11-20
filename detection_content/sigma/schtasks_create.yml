@@ -1,0 +1,24 @@
+title: Scheduled Task Created from the Command Line
+id: 5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a10
+name: schtasks_create
+status: stable
+description: schtasks.exe used to create a task.
+author: Mithil K Gowda
+date: 2026/10/07
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  selection:
+    Image|endswith: '\schtasks.exe'
+    CommandLine|windash|contains: ' -create '
+  filter_office:
+    CommandLine|contains: '\Microsoft\Office\'
+  condition: selection and not filter_office
+falsepositives:
+  - Software installers
+level: medium
+tags:
+  - attack.persistence
+  - attack.execution
+  - attack.t1053.005

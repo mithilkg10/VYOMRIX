@@ -1,0 +1,23 @@
+title: Defender Real Time Protection Disabled via PowerShell
+id: 6f7a8b9c-0d1e-4f2a-8b3c-4d5e6f7a8b11
+name: defender_tamper
+status: stable
+description: Set-MpPreference used to switch off real time monitoring or add broad exclusions.
+author: Mithil K Gowda
+date: 2026/10/07
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  selection:
+    CommandLine|contains:
+      - 'DisableRealtimeMonitoring $true'
+      - 'DisableRealtimeMonitoring 1'
+      - 'Add-MpPreference -ExclusionPath C:\'
+  condition: selection
+falsepositives:
+  - Troubleshooting by administrators
+level: high
+tags:
+  - attack.defense-evasion
+  - attack.t1562.001

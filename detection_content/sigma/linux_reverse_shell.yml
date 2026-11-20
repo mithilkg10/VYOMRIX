@@ -1,0 +1,28 @@
+title: Shell With Outbound Connection
+id: 3e4f5a6b-7c8d-4e9f-8a0b-1c2d3e4f5a28
+name: linux_reverse_shell
+status: test
+description: A shell process making an outbound connection to a public address, typical of a reverse shell.
+author: Mithil K Gowda
+date: 2026/10/13
+logsource:
+  product: linux
+  category: network_connection
+detection:
+  selection:
+    Image|endswith:
+      - '/bash'
+      - '/sh'
+      - '/nc'
+      - '/ncat'
+  filter_private:
+    DestinationIp|cidr:
+      - '10.0.0.0/8'
+      - '127.0.0.0/8'
+  condition: selection and not filter_private
+level: critical
+tags:
+  - attack.command-and-control
+  - attack.execution
+  - attack.t1059.004
+  - attack.t1571

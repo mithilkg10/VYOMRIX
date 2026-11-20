@@ -1,0 +1,18 @@
+title: WAF Path Traversal or Local File Access
+id: 1a2b3c4d-5e6f-4a7b-8c8d-9e0f1a2b3c36
+name: waf_lfi
+status: stable
+description: The WAF matched a 930 series traversal or sensitive file rule.
+author: Mithil K Gowda
+date: 2026/10/16
+logsource:
+  product: vyomrix
+  service: waf
+detection:
+  selection:
+    rule_id|startswith: '930'
+  condition: selection
+level: medium
+tags:
+  - attack.initial-access
+  - attack.t1190

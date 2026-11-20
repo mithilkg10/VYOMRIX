@@ -1,0 +1,22 @@
+title: WAF Remote Code Execution Attempt
+id: 2b3c4d5e-6f7a-4b8c-8d9e-0f1a2b3c4d37
+name: waf_rce
+status: stable
+description: The WAF matched command injection (932), PHP injection (933) or Log4Shell (944) content.
+author: Mithil K Gowda
+date: 2026/10/16
+logsource:
+  product: vyomrix
+  service: waf
+detection:
+  selection:
+    rule_id|startswith:
+      - '932'
+      - '933'
+      - '944'
+  condition: selection
+level: critical
+tags:
+  - attack.initial-access
+  - attack.execution
+  - attack.t1190

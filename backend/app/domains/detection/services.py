@@ -1,10 +1,28 @@
 import yaml
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 from .schemas import SigmaRule, ValidationResult, RuleStatus, RuleSeverity
+from .sigma_engine import CompiledRule, SigmaError, compile_rule
+
+CONTENT_DIR = Path(__file__).resolve().parents[4] / "detection_content" / "sigma"
 
 class DetectionManager:
     def __init__(self):
         self._rules: Dict[str, SigmaRule] = {}
+        self._compiled: Dict[str, CompiledRule] = {}
+
+    def load_content(self, directory: Path = CONTENT_DIR) -> int:
+        """Compiles every Sigma file in the shared detection content folder."""
+        for path in sorted(directory.glob("*.yml")):
+            rule = compile_rule(path.read_text())
+            self._compiled[rule.name or rule.id] = rule
+        return len(self._compiled)
+
+    def evaluate(self, event: Dict[str, Any]) -> List[str]:
+        """Returns the names of single event rules that match a normalised event."""
+        if not self._compiled:
+            self.load_content()
+        return [name for name, rule in self._compiled.items() if rule.kind == "event" and rule.matches(event)]
 
     def validate_sigma_rule(self, raw_yaml: str) -> ValidationResult:
         errors = []
@@ -24,6 +42,12 @@ class DetectionManager:
                 
         except yaml.YAMLError as e:
             errors.append(f"YAML parsing error: {str(e)}")
+
+        if not errors:
+            try:
+                compile_rule(raw_yaml)
+            except SigmaError as e:
+                errors.append(str(e))
             
         return ValidationResult(is_valid=len(errors) == 0, errors=errors)
 

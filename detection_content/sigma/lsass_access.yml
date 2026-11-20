@@ -1,0 +1,30 @@
+title: Suspicious LSASS Process Access
+id: 7c8d9e0f-1a2b-4c3d-8e4f-5a6b7c8d9e06
+name: lsass_access
+status: stable
+description: A process opened LSASS with an access mask that allows reading its memory.
+author: Mithil K Gowda
+date: 2026/10/05
+logsource:
+  product: windows
+  category: process_access
+detection:
+  selection:
+    TargetImage|endswith: '\lsass.exe'
+    GrantedAccess:
+      - '0x1010'
+      - '0x1410'
+      - '0x1438'
+      - '0x143a'
+      - '0x1fffff'
+  filter_av:
+    SourceImage|endswith:
+      - '\MsMpEng.exe'
+      - '\wininit.exe'
+  condition: selection and not filter_av
+falsepositives:
+  - EDR and backup agents that are not on the filter list
+level: high
+tags:
+  - attack.credential-access
+  - attack.t1003.001

@@ -1,0 +1,21 @@
+title: SSH Brute Force
+id: 8f9a0b1c-2d3e-4f4a-8b5c-6d7e8f9a0b23
+name: ssh_bruteforce
+status: stable
+description: Fifteen or more failed SSH authentications from one address in five minutes against a production host.
+author: Mithil K Gowda
+date: 2026/10/11
+correlation:
+  type: event_count
+  rules:
+    - ssh_failed
+  group-by:
+    - SourceIp
+    - Computer
+  timespan: 5m
+  condition:
+    gte: 15
+level: high
+tags:
+  - attack.credential-access
+  - attack.t1110.001

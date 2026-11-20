@@ -1,0 +1,23 @@
+title: DNS Tunnelling Long Subdomain
+id: 5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c30
+name: dns_long_label
+status: stable
+description: A DNS query with a label of 32 or more hex or base32 characters, the usual shape of data smuggled out through DNS.
+author: Mithil K Gowda
+date: 2026/10/14
+logsource:
+  category: dns
+detection:
+  selection:
+    query|re: '(^|\.)[a-z0-9]{32,}\.'
+  filter_cdn:
+    query|endswith:
+      - '.akamaiedge.net'
+      - '.cloudfront.net'
+  condition: selection and not filter_cdn
+level: medium
+tags:
+  - attack.exfiltration
+  - attack.command-and-control
+  - attack.t1048.003
+  - attack.t1071.004

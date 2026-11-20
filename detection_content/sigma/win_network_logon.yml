@@ -1,0 +1,21 @@
+title: Successful Network Logon
+id: 1e2f3a4b-5c6d-4e7f-8a8b-9c0d1e2f3a16
+name: win_network_logon
+status: stable
+description: Building block. A network or remote interactive logon succeeded.
+author: Mithil K Gowda
+date: 2026/10/09
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4624
+    LogonType:
+      - 3
+      - 10
+  condition: selection
+level: informational
+tags:
+  - attack.initial-access
+  - attack.t1078

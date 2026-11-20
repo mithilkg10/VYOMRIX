@@ -1,0 +1,18 @@
+title: Failed Windows Logon
+id: 0d1e2f3a-4b5c-4d6e-8f7a-8b9c0d1e2f15
+name: win_failed_logon
+status: stable
+description: Building block for the brute force correlations. On its own it does not raise alerts.
+author: Mithil K Gowda
+date: 2026/10/09
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4625
+  condition: selection
+level: low
+tags:
+  - attack.credential-access
+  - attack.t1110.001

@@ -1,0 +1,20 @@
+title: SSH Failed Password
+id: 6d7e8f9a-0b1c-4d2e-8f3a-4b5c6d7e8f21
+name: ssh_failed
+status: stable
+description: Building block for SSH brute force correlation.
+author: Mithil K Gowda
+date: 2026/10/11
+logsource:
+  product: linux
+  service: sshd
+detection:
+  selection:
+    Event:
+      - 'failed_password'
+      - 'invalid_user'
+  condition: selection
+level: low
+tags:
+  - attack.credential-access
+  - attack.t1110.001

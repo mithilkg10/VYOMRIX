@@ -1,0 +1,33 @@
+title: PowerShell Network Connection on Non Standard Port
+id: 1d3e4f5a-2b6c-4d7e-8f90-a1b2c3d4ea04
+name: ps_nonstandard_port
+status: test
+description: PowerShell opening an outbound connection to a public address on a port other than 80 or 443.
+author: Mithil K Gowda
+date: 2026/10/04
+logsource:
+  product: windows
+  category: network_connection
+detection:
+  selection:
+    Image|endswith:
+      - '\powershell.exe'
+      - '\pwsh.exe'
+    Initiated: 'true'
+  filter_ports:
+    DestinationPort:
+      - 80
+      - 443
+  filter_private:
+    DestinationIp|cidr:
+      - '10.0.0.0/8'
+      - '172.16.0.0/12'
+      - '192.168.0.0/16'
+  condition: selection and not filter_ports and not filter_private
+falsepositives:
+  - Admin scripts that talk to internal tooling on custom ports
+level: high
+tags:
+  - attack.command-and-control
+  - attack.t1571
+  - attack.t1071.001

@@ -1,0 +1,27 @@
+title: Encoded PowerShell Download Cradle
+id: 8b44f0a2-77de-4e0d-9b1c-3a5f2d9e4a03
+name: ps_encoded_cradle
+status: stable
+description: Decodes nothing at runtime. Instead it searches the base64 command line for the UTF16 encoded forms of IEX and WebClient download calls at every byte offset.
+author: Mithil K Gowda
+date: 2026/10/04
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  selection:
+    CommandLine|wide|base64offset|contains:
+      - 'IEX'
+      - 'Invoke-Expression'
+      - 'DownloadString'
+      - 'Net.WebClient'
+      - 'Invoke-WebRequest'
+  condition: selection
+falsepositives:
+  - Unlikely
+level: critical
+tags:
+  - attack.command-and-control
+  - attack.execution
+  - attack.t1105
+  - attack.t1059.001

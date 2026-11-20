@@ -1,0 +1,20 @@
+title: Local User Account Created
+id: 5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e20
+name: local_user_created
+status: stable
+description: A new local account was created (event 4720).
+author: Mithil K Gowda
+date: 2026/10/10
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4720
+  condition: selection
+falsepositives:
+  - New starters provisioned by IT
+level: medium
+tags:
+  - attack.persistence
+  - attack.t1136.001

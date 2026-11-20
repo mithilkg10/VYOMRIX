@@ -1,0 +1,20 @@
+title: SSH Brute Force Followed by Successful Password Logon
+id: 9a0b1c2d-3e4f-4a5b-8c6d-7e8f9a0b1c24
+name: ssh_bruteforce_success
+status: stable
+description: An SSH brute force burst and a successful password logon from the same address within ten minutes.
+author: Mithil K Gowda
+date: 2026/10/11
+correlation:
+  type: temporal_ordered
+  rules:
+    - ssh_bruteforce
+    - ssh_accepted_password
+  group-by:
+    - SourceIp
+  timespan: 10m
+level: critical
+tags:
+  - attack.initial-access
+  - attack.t1078
+  - attack.t1133

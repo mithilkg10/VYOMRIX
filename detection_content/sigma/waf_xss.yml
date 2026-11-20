@@ -1,0 +1,18 @@
+title: WAF Cross Site Scripting Attempt
+id: 3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e38
+name: waf_xss
+status: stable
+description: The WAF matched a 941 series XSS rule.
+author: Mithil K Gowda
+date: 2026/10/16
+logsource:
+  product: vyomrix
+  service: waf
+detection:
+  selection:
+    rule_id|startswith: '941'
+  condition: selection
+level: medium
+tags:
+  - attack.initial-access
+  - attack.t1190

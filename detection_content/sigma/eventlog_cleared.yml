@@ -1,0 +1,23 @@
+title: Windows Event Log Cleared
+id: 8b9c0d1e-2f3a-4b4c-8d5e-6f7a8b9c0d13
+name: eventlog_cleared
+status: stable
+description: The Security log was cleared, either seen as event 1102 or as wevtutil cl on the command line.
+author: Mithil K Gowda
+date: 2026/10/08
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  selection:
+    Image|endswith: '\wevtutil.exe'
+    CommandLine|contains:
+      - ' cl '
+      - ' clear-log '
+  condition: selection
+falsepositives:
+  - Lab rebuilds
+level: high
+tags:
+  - attack.defense-evasion
+  - attack.t1070.001

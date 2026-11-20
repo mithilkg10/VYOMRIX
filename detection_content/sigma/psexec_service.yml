@@ -1,0 +1,23 @@
+title: PsExec Service Installation
+id: 3b4c5d6e-7f80-4a91-8b2c-3d4e5f6a7b08
+name: psexec_service
+status: stable
+description: The PSEXESVC service was installed, which is what Sysinternals PsExec and many clones do on the target of remote execution.
+author: Mithil K Gowda
+date: 2026/10/06
+logsource:
+  product: windows
+  service: system
+detection:
+  selection:
+    EventID: 7045
+    ServiceName|contains: 'PSEXESVC'
+  condition: selection
+falsepositives:
+  - Administrators using PsExec for maintenance
+level: high
+tags:
+  - attack.execution
+  - attack.lateral-movement
+  - attack.t1569.002
+  - attack.t1543.003

@@ -1,0 +1,31 @@
+title: Web Server Process Spawning a Shell
+id: 0b1c2d3e-4f5a-4b6c-8d7e-8f9a0b1c2d25
+name: webserver_shell
+status: stable
+description: nginx, Apache or PHP FPM starting sh or bash. Strong sign of a web shell or remote code execution.
+author: Mithil K Gowda
+date: 2026/10/12
+logsource:
+  product: linux
+  category: process_creation
+detection:
+  selection:
+    ParentImage|endswith:
+      - '/php-fpm'
+      - '/php-fpm8.2'
+      - '/nginx'
+      - '/apache2'
+      - '/httpd'
+    Image|endswith:
+      - '/sh'
+      - '/bash'
+      - '/dash'
+  condition: selection
+falsepositives:
+  - CGI scripts that legitimately call a shell
+level: critical
+tags:
+  - attack.persistence
+  - attack.execution
+  - attack.t1505.003
+  - attack.t1059.004
